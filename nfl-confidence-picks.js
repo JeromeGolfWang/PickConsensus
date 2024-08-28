@@ -1,6 +1,9 @@
 let games = [];
 let headers = [];
 
+// Define the sheet URL
+const sheetUrl = './NFL Schedule - Sheet1.csv'; // Replace with your actual CSV file URL
+
 // Fetch the CSV file and process it
 function fetchSchedule() {
     fetch(sheetUrl)
