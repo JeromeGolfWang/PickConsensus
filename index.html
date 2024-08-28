@@ -16,25 +16,23 @@
             color: #333;
         }
         .game {
-            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
             padding: 10px;
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        .hidden {
-            display: none;
+        .game label {
+            flex: 2;
+            margin-right: 10px;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
+        .game select, .game input[type="number"] {
+            flex: 1;
+            padding: 5px;
+            margin-right: 10px;
         }
         button {
             background-color: #4CAF50;
@@ -65,7 +63,7 @@
         <!-- Games will be dynamically populated here -->
     </form>
 
-    <button onclick="submitPicks()">Save Picks</button>
+    <button type="button" onclick="submitPicks()">Save Picks</button>
 
     <div id="confirmation" class="hidden">
         <p>Your picks have been saved!</p>
@@ -76,7 +74,6 @@
         <!-- Results will be dynamically displayed here -->
     </div>
 
-    <!-- Include your JavaScript file here or embed the script directly -->
     <script src="nfl-confidence-picks.js"></script>
 </body>
 </html>

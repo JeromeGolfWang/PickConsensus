@@ -52,18 +52,33 @@ function populateGamesFromSheet(rows) {
             <option value="${awayTeam}">${awayTeam}</option>
         `;
 
-        // Create and set up the confidence input
-        const input = document.createElement("input");
-        input.type = "number";
-        input.name = `confidence${index}`;
-        input.min = 1;
-        input.max = rows.length - 1; // Adjust based on the number of games
-        input.placeholder = "Confidence";
+        // Create and set up the confidence dropdown
+        const confidenceSelect = document.createElement("select");
+        confidenceSelect.name = `confidence${index}`;
+        confidenceSelect.required = true;
+        for (let i = 1; i <= rows.length - 1; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.text = i;
+            confidenceSelect.appendChild(option);
+        }
+
+        // Disable the selected confidence score in other dropdowns
+        confidenceSelect.addEventListener('change', () => {
+            const selectedValue = confidenceSelect.value;
+            const allConfidenceSelects = document.querySelectorAll('select[name^="confidence"]');
+
+            allConfidenceSelects.forEach(selectElement => {
+                [...selectElement.options].forEach(option => {
+                    option.disabled = option.value !== "" && option.value === selectedValue;
+                });
+            });
+        });
 
         // Append elements to the container div
         div.appendChild(label);
         div.appendChild(select);
-        div.appendChild(input);
+        div.appendChild(confidenceSelect);
 
         // Append the container div to the form
         form.appendChild(div);
@@ -84,5 +99,6 @@ function submitPicks() {
     
     // You can add more logic here to save the picks or send them to a server
 }
+
 // Call the function to fetch and populate the schedule when the page loads
 document.addEventListener('DOMContentLoaded', fetchSchedule);
