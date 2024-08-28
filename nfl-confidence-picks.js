@@ -1,4 +1,4 @@
-// Define the URL to the CSV file
+// Define the URL to the CSV fil
 const sheetUrl = './NFL Schedule - Sheet1.csv';
 
 // Fetch the CSV file and process it
