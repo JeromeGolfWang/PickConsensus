@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Pick'em Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .game {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>NFL Pick'em Game</h1>
+
+    <!-- Game Selection Form -->
+    <form id="picksForm">
+        <!-- Games will be dynamically populated here -->
+    </form>
+
+    <button onclick="submitPicks()">Save Picks</button>
+
+    <div id="confirmation" class="hidden">
+        <p>Your picks have been saved!</p>
+    </div>
+
+    <div id="results" class="results hidden">
+        <h2>Results</h2>
+        <!-- Results will be dynamically displayed here -->
+    </div>
+
+    <!-- Include your JavaScript file here or embed the script directly -->
+    <script src="path-to-your-js-file.js"></script>
+</body>
+</html>
