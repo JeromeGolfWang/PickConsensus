@@ -14,10 +14,13 @@ function fetchSchedule() {
 
             // Extract headers and game data
             headers = rows[0];  // First row is the headers
+            console.log("Headers:", headers);  // Debugging: Log the headers to verify them
             games = rows.slice(1);  // The rest are game data
+            console.log("Games Data:", games); // Debugging: Log the games to check if data is correct
 
             // Populate the week selector dropdown
             const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+            console.log("All Weeks:", allWeeks);  // Debugging: Log all unique weeks
             populateWeekSelector(allWeeks);
             
             // Show the current week's games initially
@@ -34,6 +37,7 @@ function getCurrentWeek() {
     const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
     const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
 
+    console.log("Current Week:", currentWeek);  // Debugging: Log the current week
     return currentWeek;
 }
 
@@ -79,6 +83,9 @@ function populateGamesForWeek(selectedWeek) {
         const visTm = game[visTmIndex];
         const homeTm = game[homeTmIndex];
         const time = game[timeIndex] || "TBA";
+
+        // Debugging: Log each game's details
+        console.log(`Week: ${week}, Day: ${day}, Date: ${date}, Visitor: ${visTm}, Home: ${homeTm}, Time: ${time}`);
 
         // Create a container div for each game
         const div = document.createElement("div");
