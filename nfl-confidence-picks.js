@@ -1,3 +1,32 @@
+// Define the relative path to the CSV file
+const sheetUrl = './NFL Schedule - Sheet1.csv';
+
+function fetchSchedule() {
+    fetch(sheetUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            const rows = data.trim().split('\n').map(row => row.split(','));
+            console.log(rows); // Debug: Display the rows to check data structure
+            const headers = rows[0]; // Capture the headers
+            const games = rows.slice(1); // All the games data excluding headers
+            console.log(headers); // Debug: Display the headers to check correctness
+            if (games.length > 0) {
+                populateGamesFromSheet(games, headers);
+            } else {
+                throw new Error("No game data found in the CSV file.");
+            }
+        })
+        .catch(error => {
+            console.error("Failed to fetch or process data:", error);
+            document.getElementById("picksForm").innerHTML = `<p>Error loading game data. Please try again later.</p>`;
+        });
+}
+
 function populateGamesFromSheet(games, headers) {
     const form = document.getElementById("picksForm");
     if (!games || games.length === 0) {
@@ -6,6 +35,7 @@ function populateGamesFromSheet(games, headers) {
     }
 
     games.forEach((game, index) => {
+        console.log(game); // Debug: Check if each game is being processed
         const weekIndex = headers.indexOf("Week");
         const dayIndex = headers.indexOf("Day");
         const visTmIndex = headers.indexOf("VisTm");
@@ -68,3 +98,6 @@ function populateGamesFromSheet(games, headers) {
         form.appendChild(div);
     });
 }
+
+// Call the function to fetch and populate the schedule when the page loads
+document.addEventListener('DOMContentLoaded', fetchSchedule);
