@@ -13,7 +13,7 @@ function fetchSchedule() {
             const rows = data.trim().split('\n').map(row => row.split(',').map(cell => cell.trim()));
 
             // Extract headers and game data
-            headers = rows[0];  // First row is the headers
+            headers = rows[0].map(header => header.replace(/["]/g, '').trim());  // Clean up headers
             games = rows.slice(1);  // The rest are game data
 
             // Log headers and games for debugging
