@@ -26,22 +26,10 @@ function fetchSchedule() {
             console.log("All Weeks:", allWeeks);
             populateWeekSelector(allWeeks);
             
-            // Show the current week's games initially
-            populateGamesForWeek(getCurrentWeek());
+            // Show the first week's games initially
+            populateGamesForWeek(allWeeks[0]);
         })
         .catch(error => console.error("Failed to fetch or process data:", error));
-}
-
-// Determine the current week based on the current date
-function getCurrentWeek() {
-    const startDate = new Date("2024-09-05"); // NFL season start date
-    const currentDate = new Date();
-    const timeDifference = currentDate - startDate;
-    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-    const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
-
-    console.log("Current Week:", currentWeek);  // Debugging: Log the current week
-    return currentWeek > 0 ? currentWeek : 1; // Default to week 1 if currentWeek is negative
 }
 
 // Populate the week selector dropdown
@@ -57,8 +45,8 @@ function populateWeekSelector(weeks) {
         weekSelector.appendChild(option);
     });
 
-    // Automatically select the current week
-    weekSelector.value = getCurrentWeek();
+    // Automatically select the first week
+    weekSelector.value = weeks[0];
 
     weekSelector.addEventListener("change", function() {
         const selectedWeek = parseInt(weekSelector.value);
