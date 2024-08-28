@@ -1,20 +1,26 @@
 // Define the relative path to the CSV file with URL-encoded spaces
-const sheetUrl = './NFL%20Schedule%20-%20Sheet1.csv';
+const sheetUrl = './NFL Schedule - Sheet1.csv';
 
 function fetchSchedule() {
     fetch(sheetUrl)
         .then(response => {
             if (!response.ok) {
-                throw new Error("Network response was not ok");
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.text();
         })
         .then(data => {
-            // Parse the CSV data into rows and columns
             const rows = data.trim().split('\n').map(row => row.split(','));
-            populateGamesFromSheet(rows);
+            if (rows.length > 1) {
+                populateGamesFromSheet(rows);
+            } else {
+                throw new Error("No game data found in the CSV file.");
+            }
         })
-        .catch(error => console.error("Failed to fetch data:", error));
+        .catch(error => {
+            console.error("Failed to fetch or process data:", error);
+            document.getElementById("picksForm").innerHTML = `<p>Error loading game data. Please try again later.</p>`;
+        });
 }
 
 function populateGamesFromSheet(rows) {
@@ -64,5 +70,19 @@ function populateGamesFromSheet(rows) {
     });
 }
 
+function submitPicks() {
+    const form = document.getElementById("picksForm");
+    const formData = new FormData(form);
+    
+    // Process the form data
+    for (let [name, value] of formData.entries()) {
+        console.log(name, value);
+    }
+    
+    // Show confirmation
+    document.getElementById("confirmation").classList.remove("hidden");
+    
+    // You can add more logic here to save the picks or send them to a server
+}
 // Call the function to fetch and populate the schedule when the page loads
 document.addEventListener('DOMContentLoaded', fetchSchedule);
