@@ -14,14 +14,16 @@ function fetchSchedule() {
 
             // Extract headers and game data
             headers = rows[0];  // First row is the headers
-            console.log("Headers:", headers);  // Debugging: Log the headers to verify them
             games = rows.slice(1);  // The rest are game data
-            console.log("Games Data:", games); // Debugging: Log the games to check if data is correct
+
+            // Log headers and games for debugging
+            console.log("Headers:", headers);
+            console.log("Games Data:", games);
 
             // Populate the week selector dropdown
             const allWeeks = [...new Set(games.map(game => parseInt(game[headers.indexOf("Week")])))]
                             .filter(week => !isNaN(week)); // Ensure week is a valid number
-            console.log("All Weeks:", allWeeks);  // Debugging: Log all unique weeks
+            console.log("All Weeks:", allWeeks);
             populateWeekSelector(allWeeks);
             
             // Show the current week's games initially
@@ -71,14 +73,12 @@ function populateGamesForWeek(selectedWeek) {
 
     const currentWeekGames = games.filter(game => parseInt(game[headers.indexOf("Week")]) === selectedWeek);
     currentWeekGames.forEach((game, index) => {
-        const weekIndex = headers.indexOf("Week");
         const dayIndex = headers.indexOf("Day");
         const dateIndex = headers.indexOf("Date");
         const visTmIndex = headers.indexOf("VisTm");
         const homeTmIndex = headers.indexOf("HomeTm");
         const timeIndex = headers.indexOf("Time");
 
-        const week = game[weekIndex];
         const day = game[dayIndex];
         const date = game[dateIndex];
         const visTm = game[visTmIndex];
@@ -86,7 +86,7 @@ function populateGamesForWeek(selectedWeek) {
         const time = game[timeIndex] || "TBA";
 
         // Debugging: Log each game's details
-        console.log(`Week: ${week}, Day: ${day}, Date: ${date}, Visitor: ${visTm}, Home: ${homeTm}, Time: ${time}`);
+        console.log(`Week: ${selectedWeek}, Day: ${day}, Date: ${date}, Visitor: ${visTm}, Home: ${homeTm}, Time: ${time}`);
 
         // Create a container div for each game
         const div = document.createElement("div");
@@ -94,7 +94,7 @@ function populateGamesForWeek(selectedWeek) {
 
         // Create and set up the label
         const label = document.createElement("label");
-        label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
+        label.textContent = `Week ${selectedWeek}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
 
         // Create and set up the select dropdown for picking the loser
         const select = document.createElement("select");
