@@ -10,7 +10,7 @@ function fetchSchedule() {
         .then(response => response.text())
         .then(data => {
             // Split the CSV text into rows and columns
-            const rows = data.trim().split('\n').map(row => row.split(','));
+            const rows = data.trim().split('\n').map(row => row.split(',').map(cell => cell.trim()));
 
             // Extract headers and game data
             headers = rows[0];  // First row is the headers
@@ -19,7 +19,8 @@ function fetchSchedule() {
             console.log("Games Data:", games); // Debugging: Log the games to check if data is correct
 
             // Populate the week selector dropdown
-            const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+            const allWeeks = [...new Set(games.map(game => parseInt(game[headers.indexOf("Week")])))]
+                            .filter(week => !isNaN(week)); // Ensure week is a valid number
             console.log("All Weeks:", allWeeks);  // Debugging: Log all unique weeks
             populateWeekSelector(allWeeks);
             
@@ -38,7 +39,7 @@ function getCurrentWeek() {
     const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
 
     console.log("Current Week:", currentWeek);  // Debugging: Log the current week
-    return currentWeek;
+    return currentWeek > 0 ? currentWeek : 1; // Default to week 1 if currentWeek is negative
 }
 
 // Populate the week selector dropdown
