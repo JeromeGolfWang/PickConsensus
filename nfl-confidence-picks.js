@@ -1,140 +1,68 @@
-// Define the URL to the CSV file
-const sheetUrl = './NFL Schedule - Sheet1.csv';
+let games = [];
+let headers = [];
 
 // Fetch the CSV file and process it
 function fetchSchedule() {
     fetch(sheetUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.text(); // Read the CSV as text
-        })
+        .then(response => response.text())
         .then(data => {
             // Split the CSV text into rows and columns
             const rows = data.trim().split('\n').map(row => row.split(','));
-            console.log(rows); // Debug: Print the parsed rows to check if data is correct
 
             // Extract headers and game data
-            const headers = rows[0];  // First row is the headers
-            const games = rows.slice(1);  // The rest are game data
+            headers = rows[0];  // First row is the headers
+            games = rows.slice(1);  // The rest are game data
 
-            console.log(headers); // Debug: Print headers
-            console.log(games); // Debug: Print games data
-
-            // Pass the data to the function to populate the form
-            if (games.length > 0) {
-                populateGamesFromSheet(games, headers);
-            } else {
-                throw new Error("No game data found in the CSV file.");
-            }
+            // Populate the week selector dropdown
+            const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+            populateWeekSelector(allWeeks);
+            
+            // Show the current week's games initially
+            populateGamesForWeek(getCurrentWeek());
         })
         .catch(error => console.error("Failed to fetch or process data:", error));
 }
 
-// Function to dynamically create the form elements based on the CSV data
-function populateGamesFromSheet(games, headers) {
-    const form = document.getElementById("picksForm");
-    if (!games || games.length === 0) {
-        console.error("No data found in sheet.");
-        return;
-    }
+// Determine the current week based on the current date
+function getCurrentWeek() {
+    const startDate = new Date("2024-09-05"); // NFL season start date
+    const currentDate = new Date();
+    const timeDifference = currentDate - startDate;
+    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
 
-    games.forEach((game, index) => {
-        const weekIndex = headers.indexOf("Week");
-        const dayIndex = headers.indexOf("Day");
-        const dateIndex = headers.indexOf("Date");
-        const visTmIndex = headers.indexOf("VisTm");
-        const homeTmIndex = headers.indexOf("HomeTm");
-        const timeIndex = headers.indexOf("Time".trim());
+    return currentWeek;
+}
 
-        const week = game[weekIndex];
-        const day = game[dayIndex];
-        const date = game[dateIndex];
-        const visTm = game[visTmIndex];
-        const homeTm = game[homeTmIndex];
-        const time = game[timeIndex];
+// Populate the week selector dropdown
+function populateWeekSelector(weeks) {
+    const weekSelector = document.createElement("select");
+    weekSelector.id = "weekSelector";
+    document.body.prepend(weekSelector); // Add it to the top of the body
 
-        // Debug to check if data is correct
-        console.log(`Week: ${week}, ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`);
+    weeks.forEach(week => {
+        const option = document.createElement("option");
+        option.value = week;
+        option.textContent = `Week ${week}`;
+        weekSelector.appendChild(option);
+    });
 
-        // Create a container div for each game
-        const div = document.createElement("div");
-        div.className = "game";
+    // Automatically select the current week
+    weekSelector.value = getCurrentWeek();
 
-        // Create and set up the label
-        const label = document.createElement("label");
-        label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
-
-        // Create and set up the select dropdown for picking the loser
-        const select = document.createElement("select");
-        select.name = `game${index}`;
-        select.required = true;
-        select.innerHTML = `
-            <option value="">Select Loser</option>
-            <option value="${homeTm}">${homeTm}</option>
-            <option value="${visTm}">${visTm}</option>
-        `;
-
-        // Create and set up the confidence dropdown
-        const confidenceSelect = document.createElement("select");
-        confidenceSelect.name = `confidence${index}`;
-        confidenceSelect.required = true;
-        for (let i = 1; i <= games.length; i++) {
-            const option = document.createElement("option");
-            option.value = i;
-            option.text = i;
-            confidenceSelect.appendChild(option);
-        }
-
-        // Disable the selected confidence score in other dropdowns
-        confidenceSelect.addEventListener('change', () => {
-            const selectedValue = confidenceSelect.value;
-            const allConfidenceSelects = document.querySelectorAll('select[name^="confidence"]');
-
-            allConfidenceSelects.forEach(selectElement => {
-                [...selectElement.options].forEach(option => {
-                    option.disabled = option.value !== "" && option.value === selectedValue;
-                });
-            });
-        });
-
-        // Append elements to the container div
-        div.appendChild(label);
-        div.appendChild(select);
-        div.appendChild(confidenceSelect);
-
-        // Append the container div to the form
-        form.appendChild(div);
+    weekSelector.addEventListener("change", function() {
+        const selectedWeek = parseInt(weekSelector.value);
+        populateGamesForWeek(selectedWeek);
     });
 }
 
-function populateGamesFromSheet(games, headers) {
+// Populate games based on the selected week
+function populateGamesForWeek(selectedWeek) {
     const form = document.getElementById("picksForm");
-    if (!games || games.length === 0) {
-        console.error("No data found in sheet.");
-        return;
-    }
+    form.innerHTML = ''; // Clear previous games
 
-    let currentWeek = null;
-    let gameCountForWeek = 0;
-
-    // Create a map to store the number of games per week
-    const weekGameCountMap = {};
-
-    // First, count the games per week
-    games.forEach(game => {
-        const weekIndex = headers.indexOf("Week");
-        const week = game[weekIndex];
-        if (weekGameCountMap[week]) {
-            weekGameCountMap[week]++;
-        } else {
-            weekGameCountMap[week] = 1;
-        }
-    });
-
-    // Now, create the form elements
-    games.forEach((game, index) => {
+    const currentWeekGames = games.filter(game => parseInt(game[headers.indexOf("Week")]) === selectedWeek);
+    currentWeekGames.forEach((game, index) => {
         const weekIndex = headers.indexOf("Week");
         const dayIndex = headers.indexOf("Day");
         const dateIndex = headers.indexOf("Date");
@@ -147,13 +75,7 @@ function populateGamesFromSheet(games, headers) {
         const date = game[dateIndex];
         const visTm = game[visTmIndex];
         const homeTm = game[homeTmIndex];
-        const time = game[timeIndex] || "TBA"; // Provide a fallback if time is undefined
-
-        // Get the correct number of games for the current week
-        const gamesThisWeek = weekGameCountMap[week];
-
-        // Debug to check if data is correct
-        console.log(`Week: ${week}, ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`);
+        const time = game[timeIndex] || "TBA";
 
         // Create a container div for each game
         const div = document.createElement("div");
@@ -173,11 +95,11 @@ function populateGamesFromSheet(games, headers) {
             <option value="${visTm}">${visTm}</option>
         `;
 
-        // Create and set up the confidence dropdown with the correct range based on the game count for the week
+        // Create and set up the confidence dropdown with the correct range
         const confidenceSelect = document.createElement("select");
         confidenceSelect.name = `confidence${index}`;
         confidenceSelect.required = true;
-        for (let i = 1; i <= gamesThisWeek; i++) {
+        for (let i = 1; i <= currentWeekGames.length; i++) {
             const option = document.createElement("option");
             option.value = i;
             option.text = i;
