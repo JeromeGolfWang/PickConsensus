@@ -32,6 +32,9 @@ function populateGamesFromSheet(rows) {
 
     rows.forEach((row, index) => {
         if (index === 0) return; // Skip header row
+
+        // Assuming the CSV now has the following structure:
+        // [Week, Date, Time, Away Team, Home Team, Location]
         const [week, date, time, awayTeam, homeTeam, location] = row;
 
         // Create a container div for each game
