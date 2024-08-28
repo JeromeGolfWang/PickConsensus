@@ -119,6 +119,21 @@ function populateGamesFromSheet(games, headers) {
     let currentWeek = null;
     let gameCountForWeek = 0;
 
+    // Create a map to store the number of games per week
+    const weekGameCountMap = {};
+
+    // First, count the games per week
+    games.forEach(game => {
+        const weekIndex = headers.indexOf("Week");
+        const week = game[weekIndex];
+        if (weekGameCountMap[week]) {
+            weekGameCountMap[week]++;
+        } else {
+            weekGameCountMap[week] = 1;
+        }
+    });
+
+    // Now, create the form elements
     games.forEach((game, index) => {
         const weekIndex = headers.indexOf("Week");
         const dayIndex = headers.indexOf("Day");
@@ -134,11 +149,8 @@ function populateGamesFromSheet(games, headers) {
         const homeTm = game[homeTmIndex];
         const time = game[timeIndex] || "TBA"; // Provide a fallback if time is undefined
 
-        // Check if we have moved to a new week
-        if (week !== currentWeek) {
-            currentWeek = week;
-            gameCountForWeek = games.filter(g => g[weekIndex] === week).length;
-        }
+        // Get the correct number of games for the current week
+        const gamesThisWeek = weekGameCountMap[week];
 
         // Debug to check if data is correct
         console.log(`Week: ${week}, ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`);
@@ -165,7 +177,7 @@ function populateGamesFromSheet(games, headers) {
         const confidenceSelect = document.createElement("select");
         confidenceSelect.name = `confidence${index}`;
         confidenceSelect.required = true;
-        for (let i = 1; i <= gameCountForWeek; i++) {
+        for (let i = 1; i <= gamesThisWeek; i++) {
             const option = document.createElement("option");
             option.value = i;
             option.text = i;
