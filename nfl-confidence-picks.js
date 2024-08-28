@@ -116,7 +116,6 @@ function populateGamesFromSheet(games, headers) {
         return;
     }
 
-    // Group games by week to correctly handle different numbers of games
     let currentWeek = null;
     let gameCountForWeek = 0;
 
@@ -135,7 +134,7 @@ function populateGamesFromSheet(games, headers) {
         const homeTm = game[homeTmIndex];
         const time = game[timeIndex] || "TBA"; // Provide a fallback if time is undefined
 
-        // Reset game count for new week
+        // Check if we have moved to a new week
         if (week !== currentWeek) {
             currentWeek = week;
             gameCountForWeek = games.filter(g => g[weekIndex] === week).length;
@@ -162,7 +161,7 @@ function populateGamesFromSheet(games, headers) {
             <option value="${visTm}">${visTm}</option>
         `;
 
-        // Create and set up the confidence dropdown with correct range
+        // Create and set up the confidence dropdown with the correct range based on the game count for the week
         const confidenceSelect = document.createElement("select");
         confidenceSelect.name = `confidence${index}`;
         confidenceSelect.required = true;
