@@ -20,6 +20,9 @@ function populateGamesFromSheet(games, headers) {
         const homeTm = game[homeTmIndex];
         const time = game[timeIndex];
 
+        // Debug to check if data is correct
+        console.log(`Week: ${week}, ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`);
+
         // Create a container div for each game
         const div = document.createElement("div");
         div.className = "game";
