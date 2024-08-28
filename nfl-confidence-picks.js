@@ -24,7 +24,7 @@ function populateGamesFromSheet(games, headers) {
 
         // Create and set up the label
         const label = document.createElement("label");
-        label.textContent = `Week ${week}: ${visTm} vs ${homeTm} (${day} at ${time})`;
+        label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day} at ${time})`;
 
         // Create and set up the select dropdown for picking the loser
         const select = document.createElement("select");
