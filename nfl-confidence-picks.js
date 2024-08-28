@@ -1,3 +1,38 @@
+// Define the URL to the CSV file
+const sheetUrl = './NFL Schedule - Sheet1.csv';
+
+// Fetch the CSV file and process it
+function fetchSchedule() {
+    fetch(sheetUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text(); // Read the CSV as text
+        })
+        .then(data => {
+            // Split the CSV text into rows and columns
+            const rows = data.trim().split('\n').map(row => row.split(','));
+            console.log(rows); // Debug: Print the parsed rows to check if data is correct
+
+            // Extract headers and game data
+            const headers = rows[0];  // First row is the headers
+            const games = rows.slice(1);  // The rest are game data
+
+            console.log(headers); // Debug: Print headers
+            console.log(games); // Debug: Print games data
+
+            // Pass the data to the function to populate the form
+            if (games.length > 0) {
+                populateGamesFromSheet(games, headers);
+            } else {
+                throw new Error("No game data found in the CSV file.");
+            }
+        })
+        .catch(error => console.error("Failed to fetch or process data:", error));
+}
+
+// Function to dynamically create the form elements based on the CSV data
 function populateGamesFromSheet(games, headers) {
     const form = document.getElementById("picksForm");
     if (!games || games.length === 0) {
@@ -73,3 +108,6 @@ function populateGamesFromSheet(games, headers) {
         form.appendChild(div);
     });
 }
+
+// Ensure the fetchSchedule function is called when the page loads
+document.addEventListener('DOMContentLoaded', fetchSchedule);
