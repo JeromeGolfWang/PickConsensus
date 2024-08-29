@@ -21,6 +21,14 @@
     </style>
 </head>
 <body>
+    <!-- Week Selection -->
+    <div>
+        <select id="weekSelector">
+            <option value="">Select Week</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+    </div>
+
     <!-- Player Selection -->
     <select id="playerSelector">
         <option value="">Select Player</option>
@@ -35,6 +43,9 @@
 
     <!-- Button to Save Picks -->
     <button onclick="savePicks()">Save Picks</button>
+
+    <!-- Button to View Week Consensus -->
+    <button id="consensusButton" style="display:none;" onclick="window.location.href='/consensus.html'">View Week Consensus</button>
 
     <!-- Insert JavaScript here or link to an external JS file -->
     <script>
@@ -84,9 +95,7 @@
 
         // Populate the week selector dropdown
         function populateWeekSelector(weeks) {
-            const weekSelector = document.createElement("select");
-            weekSelector.id = "weekSelector";
-            document.body.prepend(weekSelector); // Add it to the top of the body
+            const weekSelector = document.getElementById("weekSelector");
 
             weeks.forEach(week => {
                 const option = document.createElement("option");
@@ -218,20 +227,13 @@
             // Save picks to storage or send to server (this part is dependent on how you're storing picks)
             console.log("Picks saved:", picks);
             alert("Your picks have been saved!");
+
+            // Display the button after saving picks
+            document.getElementById('consensusButton').style.display = 'block';
         }
 
         // Ensure the fetchSchedule function is called when the page loads
         document.addEventListener('DOMContentLoaded', fetchSchedule);
-    <!-- After saving picks -->
-<button id="consensusButton" style="display:none;" onclick="window.location.href='/consensus.html'">View Week Consensus</button>
-
-<script>
-        document.addEventListener('DOMContentLoaded', () => {
-        // Only show the button after picks are saved
-        if (picksHaveBeenSaved) {
-            document.getElementById('consensusButton').style.display = 'block';
-        }
-    });
-</script>
+    </script>
 </body>
 </html>
