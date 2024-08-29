@@ -4,76 +4,224 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFL Pick'em Game</title>
+    
+    <!-- Insert CSS directly into the HTML -->
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
+        select {
+            width: 150px; /* Adjust the width as needed */
+            padding: 5px; /* Adjust padding for better spacing */
+            font-size: 14px; /* Adjust font size for clarity */
         }
-        h1, h2 {
-            color: #333;
-        }
-        .game {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .game label {
-            flex: 2;
-            margin-right: 10px;
-        }
-        .game select, .game input[type="number"] {
-            flex: 1;
-            padding: 5px;
-            margin-right: 10px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #results {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+
+        label {
+            display: inline-block;
+            width: 250px; /* Adjust width as needed */
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <h1>NFL Pick'em Game</h1>
+    <!-- Player Selection -->
+    <select id="playerSelector">
+        <option value="">Select Player</option>
+        <option value="Player1">Player 1</option>
+        <option value="Player2">Player 2</option>
+        <option value="Player3">Player 3</option>
+        <option value="Player4">Player 4</option>
+    </select>
 
-    <!-- Game Selection Form -->
-    <form id="picksForm">
-        <!-- Games will be dynamically populated here -->
-    </form>
+    <!-- Form for Picks -->
+    <form id="picksForm"></form>
 
-    <button type="button" onclick="submitPicks()">Save Picks</button>
+    <!-- Button to Save Picks -->
+    <button onclick="savePicks()">Save Picks</button>
 
-    <div id="confirmation" class="hidden">
-        <p>Your picks have been saved!</p>
-    </div>
+    <!-- Insert JavaScript here or link to an external JS file -->
+    <script>
+        let games = [];
+        let headers = [];
 
-    <div id="results" class="results hidden">
-        <h2>Results</h2>
-        <!-- Results will be dynamically displayed here -->
-    </div>
+        // Define the sheet URL
+        const sheetUrl = './NFL Schedule - Sheet1.csv'; // Replace with your actual CSV file URL
 
-    <script src="nfl-confidence-picks.js"></script>
+        // Fetch the CSV file and process it
+        function fetchSchedule() {
+            fetch(sheetUrl)
+                .then(response => response.text())
+                .then(data => {
+                    // Split the CSV text into rows and columns
+                    const rows = data.trim().split('\n').map(row => row.split(','));
+
+                    // Extract headers and game data
+                    headers = rows[0];  // First row is the headers
+                    games = rows.slice(1);  // The rest are game data
+
+                    console.log("Headers:", headers);
+                    console.log("Games Data:", games);
+
+                    // Populate the week selector dropdown
+                    const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+                    console.log("All Weeks:", allWeeks);
+                    populateWeekSelector(allWeeks);
+
+                    // Show the current week's games initially
+                    populateGamesForWeek(getCurrentWeek());
+                })
+                .catch(error => console.error("Failed to fetch or process data:", error));
+        }
+
+        // Determine the current week based on the current date
+        function getCurrentWeek() {
+            const startDate = new Date("2024-09-05"); // NFL season start date
+            const currentDate = new Date();
+            const timeDifference = currentDate - startDate;
+            const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+            const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
+
+            console.log("Current Week:", currentWeek);
+            return currentWeek;
+        }
+
+        // Populate the week selector dropdown
+        function populateWeekSelector(weeks) {
+            const weekSelector = document.createElement("select");
+            weekSelector.id = "weekSelector";
+            document.body.prepend(weekSelector); // Add it to the top of the body
+
+            weeks.forEach(week => {
+                const option = document.createElement("option");
+                option.value = week;
+                option.textContent = `Week ${week}`;
+                weekSelector.appendChild(option);
+            });
+
+            // Automatically select the current week
+            weekSelector.value = getCurrentWeek();
+
+            weekSelector.addEventListener("change", function() {
+                const selectedWeek = parseInt(weekSelector.value);
+                populateGamesForWeek(selectedWeek);
+            });
+        }
+
+        // Populate games based on the selected week
+        function populateGamesForWeek(selectedWeek) {
+            const form = document.getElementById("picksForm");
+            form.innerHTML = ''; // Clear previous games
+
+            const currentWeekGames = games.filter(game => parseInt(game[headers.indexOf("Week")]) === selectedWeek);
+            currentWeekGames.forEach((game, index) => {
+                const weekIndex = headers.indexOf("Week");
+                const dayIndex = headers.indexOf("Day");
+                const dateIndex = headers.indexOf("Date");
+                const visTmIndex = headers.indexOf("VisTm");
+                const homeTmIndex = headers.indexOf("HomeTm");
+                const timeIndex = headers.indexOf("Time");
+
+                const week = game[weekIndex];
+                const day = game[dayIndex];
+                const date = game[dateIndex];
+                const visTm = game[visTmIndex];
+                const homeTm = game[homeTmIndex];
+                const time = game[timeIndex] || "TBA";
+
+                // Create a container div for each game
+                const div = document.createElement("div");
+                div.className = "game";
+
+                // Create and set up the label
+                const label = document.createElement("label");
+                label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
+
+                // Create and set up the select dropdown for picking the loser
+                const select = document.createElement("select");
+                select.name = `game${index}`;
+                select.required = true;
+                select.innerHTML = `
+                    <option value="">Select Loser</option>
+                    <option value="${homeTm}">${homeTm}</option>
+                    <option value="${visTm}">${visTm}</option>
+                `;
+
+                // Create and set up the confidence dropdown with the correct range
+                const confidenceSelect = document.createElement("select");
+                confidenceSelect.name = `confidence${index}`;
+                confidenceSelect.required = true;
+                for (let i = 1; i <= currentWeekGames.length; i++) {
+                    const option = document.createElement("option");
+                    option.value = i;
+                    option.text = i;
+                    confidenceSelect.appendChild(option);
+                }
+
+                // Append elements to the container div
+                div.appendChild(label);
+                div.appendChild(select);
+                div.appendChild(confidenceSelect);
+
+                // Append the container div to the form
+                form.appendChild(div);
+            });
+
+            // Now, add the event listener to update options after the games are populated
+            updateConfidenceOptions(); // Initialize the options once after populating
+
+            document.querySelectorAll('select[name^="confidence"]').forEach(select => {
+                select.addEventListener('change', updateConfidenceOptions);
+            });
+        }
+
+        // Function to prevent duplicate confidence numbers
+        function updateConfidenceOptions() {
+            const allSelectedValues = Array.from(document.querySelectorAll('select[name^="confidence"]'))
+                .map(select => select.value)
+                .filter(value => value !== "");
+
+            document.querySelectorAll('select[name^="confidence"]').forEach(select => {
+                const currentValue = select.value;
+
+                Array.from(select.options).forEach(option => {
+                    if (option.value === "" || option.value === currentValue) {
+                        option.disabled = false;
+                    } else {
+                        option.disabled = allSelectedValues.includes(option.value);
+                    }
+                });
+            });
+        }
+
+        // Save the picks
+        function savePicks() {
+            const selectedPlayer = document.getElementById('playerSelector').value;
+            if (!selectedPlayer) {
+                alert("Please select a player before saving.");
+                return;
+            }
+
+            // Now proceed with saving picks
+            const picks = {
+                player: selectedPlayer,
+                games: []
+            };
+
+            document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+                const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+                if (select.value && confidenceSelect.value) {
+                    picks.games.push({
+                        game: select.name,
+                        loser: select.value,
+                        confidence: confidenceSelect.value
+                    });
+                }
+            });
+
+            // Save picks to storage or send to server (this part is dependent on how you're storing picks)
+            console.log("Picks saved:", picks);
+            alert("Your picks have been saved!");
+        }
+
+        // Ensure the fetchSchedule function is called when the page loads
+        document.addEventListener('DOMContentLoaded', fetchSchedule);
+    </script>
 </body>
 </html>

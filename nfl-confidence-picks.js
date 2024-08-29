@@ -10,26 +10,36 @@ function fetchSchedule() {
         .then(response => response.text())
         .then(data => {
             // Split the CSV text into rows and columns
-            const rows = data.trim().split('\n').map(row => row.split(',').map(cell => cell.trim()));
+            const rows = data.trim().split('\n').map(row => row.split(','));
 
             // Extract headers and game data
-            headers = rows[0].map(header => header.replace(/["]/g, '').trim());  // Clean up headers
+            headers = rows[0];  // First row is the headers
             games = rows.slice(1);  // The rest are game data
 
-            // Log headers and games for debugging
             console.log("Headers:", headers);
             console.log("Games Data:", games);
 
             // Populate the week selector dropdown
-            const allWeeks = [...new Set(games.map(game => parseInt(game[headers.indexOf("Week")])))]
-                            .filter(week => !isNaN(week)); // Ensure week is a valid number
+            const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
             console.log("All Weeks:", allWeeks);
             populateWeekSelector(allWeeks);
-            
-            // Show the first week's games initially
-            populateGamesForWeek(allWeeks[0]);
+
+            // Show the current week's games initially
+            populateGamesForWeek(getCurrentWeek());
         })
         .catch(error => console.error("Failed to fetch or process data:", error));
+}
+
+// Determine the current week based on the current date
+function getCurrentWeek() {
+    const startDate = new Date("2024-09-05"); // NFL season start date
+    const currentDate = new Date();
+    const timeDifference = currentDate - startDate;
+    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
+
+    console.log("Current Week:", currentWeek);
+    return currentWeek;
 }
 
 // Populate the week selector dropdown
@@ -45,8 +55,8 @@ function populateWeekSelector(weeks) {
         weekSelector.appendChild(option);
     });
 
-    // Automatically select the first week
-    weekSelector.value = weeks[0];
+    // Automatically select the current week
+    weekSelector.value = getCurrentWeek();
 
     weekSelector.addEventListener("change", function() {
         const selectedWeek = parseInt(weekSelector.value);
@@ -61,20 +71,19 @@ function populateGamesForWeek(selectedWeek) {
 
     const currentWeekGames = games.filter(game => parseInt(game[headers.indexOf("Week")]) === selectedWeek);
     currentWeekGames.forEach((game, index) => {
+        const weekIndex = headers.indexOf("Week");
         const dayIndex = headers.indexOf("Day");
         const dateIndex = headers.indexOf("Date");
         const visTmIndex = headers.indexOf("VisTm");
         const homeTmIndex = headers.indexOf("HomeTm");
         const timeIndex = headers.indexOf("Time");
 
+        const week = game[weekIndex];
         const day = game[dayIndex];
         const date = game[dateIndex];
         const visTm = game[visTmIndex];
         const homeTm = game[homeTmIndex];
         const time = game[timeIndex] || "TBA";
-
-        // Debugging: Log each game's details
-        console.log(`Week: ${selectedWeek}, Day: ${day}, Date: ${date}, Visitor: ${visTm}, Home: ${homeTm}, Time: ${time}`);
 
         // Create a container div for each game
         const div = document.createElement("div");
@@ -82,7 +91,7 @@ function populateGamesForWeek(selectedWeek) {
 
         // Create and set up the label
         const label = document.createElement("label");
-        label.textContent = `Week ${selectedWeek}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
+        label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
 
         // Create and set up the select dropdown for picking the loser
         const select = document.createElement("select");
@@ -105,18 +114,6 @@ function populateGamesForWeek(selectedWeek) {
             confidenceSelect.appendChild(option);
         }
 
-        // Disable the selected confidence score in other dropdowns
-        confidenceSelect.addEventListener('change', () => {
-            const selectedValue = confidenceSelect.value;
-            const allConfidenceSelects = document.querySelectorAll('select[name^="confidence"]');
-
-            allConfidenceSelects.forEach(selectElement => {
-                [...selectElement.options].forEach(option => {
-                    option.disabled = option.value !== "" && option.value === selectedValue;
-                });
-            });
-        });
-
         // Append elements to the container div
         div.appendChild(label);
         div.appendChild(select);
@@ -125,6 +122,62 @@ function populateGamesForWeek(selectedWeek) {
         // Append the container div to the form
         form.appendChild(div);
     });
+
+    // Now, add the event listener to update options after the games are populated
+    updateConfidenceOptions(); // Initialize the options once after populating
+
+    document.querySelectorAll('select[name^="confidence"]').forEach(select => {
+        select.addEventListener('change', updateConfidenceOptions);
+    });
+}
+
+// Function to prevent duplicate confidence numbers
+function updateConfidenceOptions() {
+    const allSelectedValues = Array.from(document.querySelectorAll('select[name^="confidence"]'))
+        .map(select => select.value)
+        .filter(value => value !== "");
+
+    document.querySelectorAll('select[name^="confidence"]').forEach(select => {
+        const currentValue = select.value;
+
+        Array.from(select.options).forEach(option => {
+            if (option.value === "" || option.value === currentValue) {
+                option.disabled = false;
+            } else {
+                option.disabled = allSelectedValues.includes(option.value);
+            }
+        });
+    });
+}
+
+// Save the picks
+function savePicks() {
+    const selectedPlayer = document.getElementById('playerSelector').value;
+    if (!selectedPlayer) {
+        alert("Please select a player before saving.");
+        return;
+    }
+
+    // Now proceed with saving picks
+    const picks = {
+        player: selectedPlayer,
+        games: []
+    };
+
+    document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+        const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+        if (select.value && confidenceSelect.value) {
+            picks.games.push({
+                game: select.name,
+                loser: select.value,
+                confidence: confidenceSelect.value
+            });
+        }
+    });
+
+    // Save picks to storage or send to server (this part is dependent on how you're storing picks)
+    console.log("Picks saved:", picks);
+    alert("Your picks have been saved!");
 }
 
 // Ensure the fetchSchedule function is called when the page loads
