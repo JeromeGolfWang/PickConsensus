@@ -14,6 +14,14 @@
         // Replace '1' with the current week number as needed
         const weekNumber = 1; 
 
+        // Mapping old player names to the new names
+        const playerNameMap = {
+            'Player1': 'Dan',
+            'Player2': 'Tim',
+            'Player3': 'Patrick',
+            'Player4': 'Jay'
+        };
+
         async function fetchPicksForWeek(week) {
             const response = await fetch(`https://solitary-boat-e4cc.jay-finnigan.workers.dev/fetch-picks?week=${week}`);
             if (!response.ok) {
@@ -34,10 +42,12 @@
                     }
                     consensus[game.loser] += parseInt(game.confidence);
 
-                    if (!playerScores[pick.player]) {
-                        playerScores[pick.player] = 0;
+                    const playerName = playerNameMap[pick.player] || pick.player;
+
+                    if (!playerScores[playerName]) {
+                        playerScores[playerName] = 0;
                     }
-                    playerScores[pick.player] += parseInt(game.confidence);
+                    playerScores[playerName] += parseInt(game.confidence);
                 });
             });
 
