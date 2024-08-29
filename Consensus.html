@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week Consensus</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Week Consensus</h1>
+
+    <!-- Table to display the consensus data -->
+    <table id="consensusTable">
+        <thead>
+            <tr>
+                <th>Game</th>
+                <th>Player 1</th>
+                <th>Player 2</th>
+                <th>Player 3</th>
+                <th>Player 4</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Consensus data will be populated here -->
+        </tbody>
+    </table>
+
+    <!-- Script to retrieve and display the consensus data -->
+    <script>
+        function loadConsensusData() {
+            // Retrieve data from storage (assuming data is stored in localStorage for this example)
+            let allPicks = [];
+
+            for (let i = 1; i <= 4; i++) {
+                const playerPicks = JSON.parse(localStorage.getItem(`player${i}_picks`));
+                if (playerPicks) {
+                    allPicks.push(playerPicks);
+                }
+            }
+
+            if (allPicks.length === 0) {
+                alert("No picks have been saved yet.");
+                return;
+            }
+
+            // Populate the table with consensus data
+            const tableBody = document.querySelector("#consensusTable tbody");
+            tableBody.innerHTML = "";
+
+            const gamesCount = allPicks[0].games.length;
+            for (let i = 0; i < gamesCount; i++) {
+                const row = document.createElement("tr");
+
+                // Add the game info (assuming all players pick the same game in order)
+                const gameCell = document.createElement("td");
+                gameCell.textContent = allPicks[0].games[i].game;
+                row.appendChild(gameCell);
+
+                // Add the picks for each player
+                allPicks.forEach(picks => {
+                    const pickCell = document.createElement("td");
+                    pickCell.textContent = picks.games[i].loser;
+                    row.appendChild(pickCell);
+                });
+
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Call the function to load consensus data when the page is loaded
+        document.addEventListener('DOMContentLoaded', loadConsensusData);
+    </script>
+</body>
+</html>
