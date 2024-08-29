@@ -150,17 +150,18 @@ function updateConfidenceOptions() {
     });
 }
 
-// Save the picks
-function savePicks() {
+// Update savePicks function to store picks using a Cloudflare Worker
+async function savePicks() {
     const selectedPlayer = document.getElementById('playerSelector').value;
     if (!selectedPlayer) {
         alert("Please select a player before saving.");
         return;
     }
 
-    // Now proceed with saving picks
+    // Prepare picks data
     const picks = {
         player: selectedPlayer,
+        week: parseInt(document.getElementById("weekSelector").value),
         games: []
     };
 
@@ -175,9 +176,20 @@ function savePicks() {
         }
     });
 
-    // Save picks to storage or send to server (this part is dependent on how you're storing picks)
-    console.log("Picks saved:", picks);
-    alert("Your picks have been saved!");
+    // Send picks to the Cloudflare Worker (backend) for storage
+    const response = await fetch('/save-picks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(picks)
+    });
+
+    if (response.ok) {
+        alert("Your picks have been saved!");
+    } else {
+        alert("There was an issue saving your picks. Please try again.");
+    }
 }
 
 // Ensure the fetchSchedule function is called when the page loads
