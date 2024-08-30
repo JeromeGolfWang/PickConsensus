@@ -177,7 +177,7 @@ async function savePicks() {
     });
 
     // Send picks to the Cloudflare Worker (backend) for storage
-    const response = await fetch('/save-picks', {
+    const response = await fetch('https://solitary-boat-e4cc.jay-finnigan.workers.dev/save-picks', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
