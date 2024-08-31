@@ -33,19 +33,6 @@ function fetchSchedule() {
         .catch(error => console.error("Failed to fetch or process data:", error));
 }
 
-// Determine the current week based on the available weeks
-function getCurrentWeek() {
-    // Get all the unique weeks available in the CSV
-    const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
-    console.log("Available Weeks from CSV:", allWeeks);
-
-    // Automatically select the last available week (this assumes the data is sorted by week)
-    const currentWeek = allWeeks[allWeeks.length - 1];
-    console.log("Selected Current Week:", currentWeek);
-
-    return currentWeek;
-}
-
 function populateWeekSelector(weeks) {
     const weekSelector = document.getElementById("weekSelector");
 
@@ -56,8 +43,8 @@ function populateWeekSelector(weeks) {
         weekSelector.appendChild(option);
     });
 
-    // Automatically select the last available week by default
-    weekSelector.value = getCurrentWeek();
+    // Automatically select the first available week by default
+    weekSelector.value = Math.min(...weeks);
 
     weekSelector.addEventListener("change", function() {
         const selectedWeek = parseInt(weekSelector.value);
@@ -151,18 +138,25 @@ function updateConfidenceOptions() {
     });
 }
 
-// Update savePicks function to store picks using a Cloudflare Worker
+// Update savePicks function to store picks using the selected week
 async function savePicks() {
     const selectedPlayer = document.getElementById('playerSelector').value;
+    const selectedWeek = document.getElementById('weekSelector').value; // Get the selected week
+
     if (!selectedPlayer) {
         alert("Please select a player before saving.");
+        return;
+    }
+
+    if (!selectedWeek) {
+        alert("Please select a week before saving.");
         return;
     }
 
     // Prepare picks data
     const picks = {
         player: selectedPlayer,
-        week: parseInt(document.getElementById("weekSelector").value),
+        week: parseInt(selectedWeek), // Use the selected week
         games: []
     };
 
