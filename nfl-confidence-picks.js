@@ -21,8 +21,6 @@ function fetchSchedule() {
 
             // Populate the week selector dropdown with unique week numbers
             const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
-            
-            // Log the extracted week numbers
             console.log("Extracted Week Numbers: ", allWeeks);
 
             populateWeekSelector(allWeeks);
@@ -31,6 +29,19 @@ function fetchSchedule() {
             populateGamesForWeek(Math.min(...allWeeks));
         })
         .catch(error => console.error("Failed to fetch or process data:", error));
+}
+
+// Determine the current week based on the available weeks
+function getCurrentWeek() {
+    // Get all the unique weeks available in the CSV
+    const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+    console.log("Available Weeks from CSV:", allWeeks);
+
+    // Automatically select the last available week (this assumes the data is sorted by week)
+    const currentWeek = allWeeks[allWeeks.length - 1];
+    console.log("Selected Current Week:", currentWeek);
+
+    return currentWeek;
 }
 
 function populateWeekSelector(weeks) {
@@ -43,8 +54,8 @@ function populateWeekSelector(weeks) {
         weekSelector.appendChild(option);
     });
 
-    // Automatically select the first available week by default
-    weekSelector.value = Math.min(...weeks);
+    // Automatically select the last available week by default
+    weekSelector.value = getCurrentWeek();
 
     weekSelector.addEventListener("change", function() {
         const selectedWeek = parseInt(weekSelector.value);
@@ -138,25 +149,20 @@ function updateConfidenceOptions() {
     });
 }
 
-// Update savePicks function to store picks using the selected week
+// Save the picks
 async function savePicks() {
     const selectedPlayer = document.getElementById('playerSelector').value;
-    const selectedWeek = document.getElementById('weekSelector').value; // Get the selected week
+    const selectedWeek = parseInt(document.getElementById("weekSelector").value);
 
     if (!selectedPlayer) {
         alert("Please select a player before saving.");
         return;
     }
 
-    if (!selectedWeek) {
-        alert("Please select a week before saving.");
-        return;
-    }
-
-    // Prepare picks data
+    // Now proceed with saving picks
     const picks = {
         player: selectedPlayer,
-        week: parseInt(selectedWeek), // Use the selected week
+        week: selectedWeek,
         games: []
     };
 
@@ -170,6 +176,8 @@ async function savePicks() {
             });
         }
     });
+
+    console.log("Picks saved:", picks);
 
     // Send picks to the Cloudflare Worker (backend) for storage
     const response = await fetch('https://solitary-boat-e4cc.jay-finnigan.workers.dev/save-picks', {
