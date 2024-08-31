@@ -19,13 +19,13 @@ function fetchSchedule() {
             console.log("Headers:", headers);
             console.log("Games Data:", games);
 
-            // Populate the week selector dropdown
+            // Populate the week selector dropdown with unique week numbers
             const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
             console.log("All Weeks:", allWeeks);
             populateWeekSelector(allWeeks);
 
-            // Show the current week's games initially
-            populateGamesForWeek(getCurrentWeek());
+            // Show the first week's games initially
+            populateGamesForWeek(Math.min(...allWeeks));
         })
         .catch(error => console.error("Failed to fetch or process data:", error));
 }
@@ -42,11 +42,8 @@ function getCurrentWeek() {
     return currentWeek;
 }
 
-// Populate the week selector dropdown
 function populateWeekSelector(weeks) {
-    const weekSelector = document.createElement("select");
-    weekSelector.id = "weekSelector";
-    document.body.prepend(weekSelector); // Add it to the top of the body
+    const weekSelector = document.getElementById("weekSelector");
 
     weeks.forEach(week => {
         const option = document.createElement("option");
@@ -55,8 +52,9 @@ function populateWeekSelector(weeks) {
         weekSelector.appendChild(option);
     });
 
-    // Automatically select the current week
-    weekSelector.value = getCurrentWeek();
+    // Automatically select the first week
+    const firstWeek = Math.min(...weeks);
+    weekSelector.value = firstWeek;
 
     weekSelector.addEventListener("change", function() {
         const selectedWeek = parseInt(weekSelector.value);
