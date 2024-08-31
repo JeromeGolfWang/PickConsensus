@@ -30,15 +30,16 @@ function fetchSchedule() {
         .catch(error => console.error("Failed to fetch or process data:", error));
 }
 
-// Determine the current week based on the current date
+// Determine the current week based on the available weeks
 function getCurrentWeek() {
-    const startDate = new Date("2024-09-05"); // NFL season start date
-    const currentDate = new Date();
-    const timeDifference = currentDate - startDate;
-    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-    const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
+    // Get all the unique weeks available in the CSV
+    const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+    console.log("Available Weeks from CSV:", allWeeks);
 
-    console.log("Current Week:", currentWeek);
+    // Automatically select the last available week (this assumes the data is sorted by week)
+    const currentWeek = allWeeks[allWeeks.length - 1];
+    console.log("Selected Current Week:", currentWeek);
+
     return currentWeek;
 }
 
@@ -52,9 +53,8 @@ function populateWeekSelector(weeks) {
         weekSelector.appendChild(option);
     });
 
-    // Automatically select the first week
-    const firstWeek = Math.min(...weeks);
-    weekSelector.value = firstWeek;
+    // Automatically select the last available week by default
+    weekSelector.value = getCurrentWeek();
 
     weekSelector.addEventListener("change", function() {
         const selectedWeek = parseInt(weekSelector.value);
