@@ -195,5 +195,16 @@ async function savePicks() {
     }
 }
 
+// Add a button to view the week's consensus
+const consensusButton = document.createElement('button');
+consensusButton.textContent = 'View Week Consensus';
+consensusButton.id = 'viewConsensus';
+consensusButton.addEventListener('click', function() {
+    // Code to handle the consensus view
+    // You can navigate to another page or display a modal with the consensus data
+    alert("Consensus feature is under construction.");
+});
+document.body.appendChild(consensusButton);
+
 // Ensure the fetchSchedule function is called when the page loads
 document.addEventListener('DOMContentLoaded', fetchSchedule);
