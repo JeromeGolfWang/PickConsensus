@@ -21,7 +21,10 @@ function fetchSchedule() {
 
             // Populate the week selector dropdown with unique week numbers
             const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
-            console.log("All Weeks:", allWeeks);
+            
+            // Log the extracted week numbers
+            console.log("Extracted Week Numbers: ", allWeeks);
+
             populateWeekSelector(allWeeks);
 
             // Show the first week's games initially
