@@ -149,6 +149,7 @@ function updateConfidenceOptions() {
     });
 }
 
+// Save the picks
 async function savePicks() {
     const selectedPlayer = document.getElementById('playerSelector').value;
     const selectedWeek = parseInt(document.getElementById("weekSelector").value);
@@ -170,12 +171,10 @@ async function savePicks() {
             picks.games.push({
                 game: select.name,
                 loser: select.value,
-                confidence: confidenceSelect.value
+                confidence: parseInt(confidenceSelect.value)
             });
         }
     });
-
-    console.log("Picks to be sent:", JSON.stringify(picks, null, 2)); // Debugging line
 
     try {
         const response = await fetch('https://solitary-boat-e4cc.jay-finnigan.workers.dev/save-picks', {
@@ -185,8 +184,6 @@ async function savePicks() {
             },
             body: JSON.stringify(picks)
         });
-
-        console.log("Response from server:", response); // Debugging line
 
         if (response.ok) {
             alert("Your picks have been saved!");
@@ -208,7 +205,4 @@ consensusButton.addEventListener('click', function() {
     // You can navigate to another page or display a modal with the consensus data
     alert("Consensus feature is under construction.");
 });
-document.body.appendChild(consensusButton);
-
-// Ensure the fetchSchedule function is called when the page loads
-document.addEventListener('DOMContentLoaded', fetchSchedule);
+document.body.append
