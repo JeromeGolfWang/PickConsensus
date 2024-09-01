@@ -159,7 +159,6 @@ async function savePicks() {
         return;
     }
 
-    // Now proceed with saving picks
     const picks = {
         player: selectedPlayer,
         week: selectedWeek,
@@ -177,21 +176,23 @@ async function savePicks() {
         }
     });
 
-    console.log("Picks to be saved:", picks);
+    try {
+        const response = await fetch('https://solitary-boat-e4cc.jay-finnigan.workers.dev/save-picks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(picks)
+        });
 
-    // Send picks to the Cloudflare Worker (backend) for storage
-    const response = await fetch('https://solitary-boat-e4cc.jay-finnigan.workers.dev/save-picks', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(picks)
-    });
-
-    if (response.ok) {
-        alert("Your picks have been saved!");
-    } else {
-        alert("There was an issue saving your picks. Please try again.");
+        if (response.ok) {
+            alert("Your picks have been saved!");
+        } else {
+            alert("There was an issue saving your picks. Please try again.");
+        }
+    } catch (error) {
+        console.error("Error saving picks:", error);
+        alert("An error occurred. Please try again later.");
     }
 }
 
