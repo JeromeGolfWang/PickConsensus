@@ -205,4 +205,3 @@ consensusButton.addEventListener('click', function() {
     // You can navigate to another page or display a modal with the consensus data
     alert("Consensus feature is under construction.");
 });
-document.body.append
