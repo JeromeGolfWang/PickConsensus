@@ -149,7 +149,6 @@ function updateConfidenceOptions() {
     });
 }
 
-// Save the picks
 async function savePicks() {
     const selectedPlayer = document.getElementById('playerSelector').value;
     const selectedWeek = parseInt(document.getElementById("weekSelector").value);
@@ -176,13 +175,18 @@ async function savePicks() {
         }
     });
 
+    // Convert the picks object into a JSON string
+    const dataToSend = JSON.stringify(picks);
+
+    console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
+
     try {
-        const response = await fetch('https://solitary-boat-e4cc.jay-finnigan.workers.dev/save-picks', {
+        const response = await fetch('https://your-worker-url.dev/save-picks', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(picks)
+            body: dataToSend
         });
 
         if (response.ok) {
