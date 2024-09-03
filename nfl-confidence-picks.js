@@ -51,9 +51,8 @@
         }
     });
 
-    // Prepare the data to send
     const dataToSend = JSON.stringify({ games });
-    console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
+    console.log("Data being sent:", dataToSend);
 
     try {
         const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
@@ -63,7 +62,19 @@
             },
             body: dataToSend
         });
-        const responseData = await response.json();
+        
+        const responseText = await response.text();
+        console.log("Raw response:", responseText);
+
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+        } catch (error) {
+            console.error("Error parsing response JSON:", error);
+            alert("Received invalid response from server.");
+            return;
+        }
+
         if (response.ok) {
             alert("Your picks have been saved!");
         } else {
