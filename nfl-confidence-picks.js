@@ -32,57 +32,49 @@
     }
 
     // ... [Keep all other existing functions as they are] ...
-
     async function savePicks() {
-        const selectedPlayer = document.getElementById('playerSelector').value;
-        const selectedWeek = parseInt(document.getElementById("weekSelector").value);
-
-        if (!selectedPlayer) {
-            alert("Please select a player before saving.");
-            return;
-        }
-
-        const picks = {
-            player: selectedPlayer,
-            week: selectedWeek,
-            games: []
-        };
-
-        document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
-            const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
-            if (select.value && confidenceSelect.value) {
-                picks.games.push({
-                    game: `game${index}`,
-                    loser: select.value,
-                    confidence: parseInt(confidenceSelect.value)
-                });
-            }
-        });
-
-        // Convert the picks object into a JSON string
-        const dataToSend = JSON.stringify(picks);
-
-        console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
-
-        try {
-            const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: dataToSend
-            });
-
-            if (response.ok) {
-                alert("Your picks have been saved!");
-            } else {
-                alert("There was an issue saving your picks. Please try again.");
-            }
-        } catch (error) {
-            console.error("Error saving picks:", error);
-            alert("An error occurred. Please try again later.");
-        }
+    const selectedPlayer = document.getElementById('playerSelector').value;
+    const selectedWeek = parseInt(document.getElementById("weekSelector").value);
+    if (!selectedPlayer) {
+        alert("Please select a player before saving.");
+        return;
     }
+    const games = [];
+    document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+        const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+        if (select.value && confidenceSelect.value) {
+            games.push({
+                game: `game${index}`,
+                loser: select.value,
+                confidence: parseInt(confidenceSelect.value)
+            });
+        }
+    });
+
+    // Prepare the data to send
+    const dataToSend = JSON.stringify({ games });
+    console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
+
+    try {
+        const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: dataToSend
+        });
+        const responseData = await response.json();
+        if (response.ok) {
+            alert("Your picks have been saved!");
+        } else {
+            alert(`There was an issue saving your picks: ${responseData.error}`);
+        }
+        console.log("Server response:", responseData);
+    } catch (error) {
+        console.error("Error saving picks:", error);
+        alert("An error occurred. Please try again later.");
+    }
+}
 
     async function getPicks(player, week) {
         try {
