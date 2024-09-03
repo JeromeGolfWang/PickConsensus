@@ -34,52 +34,107 @@
     // ... [Keep all other existing functions as they are] ...
 
     // Update the savePicks function
-    async function savePicks() {
-    const selectedPlayer = document.getElementById('playerSelector').value;
-    const selectedWeek = parseInt(document.getElementById("weekSelector").value);
+    addEventListener('fetch', event => {
+    event.respondWith(handleRequest(event.request));
+});
 
-    if (!selectedPlayer) {
-        alert("Please select a player before saving.");
-        return;
+async function handleRequest(request) {
+    const url = new URL(request.url);
+    let response;
+
+    if (request.method === 'POST' && url.pathname === '/save-picks') {
+        response = await handleSavePicks(request);
+    } else if (request.method === 'GET' && url.pathname === '/get-picks') {
+        response = await handleGetPicks(request);
+    } else {
+        response = new Response(JSON.stringify({ error: 'Endpoint not found' }), { 
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 
-    const games = [];
+    return response;
+}
 
-    document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
-        const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
-        if (select.value && confidenceSelect.value) {
-            games.push({
-                game: `game${index}`,          // Naming the game
-                loser: select.value,           // Team selected as the loser
-                confidence: parseInt(confidenceSelect.value) // Confidence level as a number
-            });
-        }
+async function handleSavePicks(request) {
+    const url = new URL(request.url);
+    const player = url.searchParams.get('player');
+    const week = url.searchParams.get('week');
+
+    if (!player || !week) {
+        return new Response(JSON.stringify({ error: 'Missing player or week in URL parameters' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    let data;
+    try {
+        data = await request.json();  // Expect JSON data
+    } catch (e) {
+        console.error('Error parsing JSON data:', e);
+        return new Response(JSON.stringify({ error: 'Error parsing JSON data', details: e.message }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const games = data.games;
+
+    if (!Array.isArray(games)) {
+        return new Response(JSON.stringify({ error: 'Games data is invalid' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const picks = { player, week: parseInt(week), games };
+
+    // Save picks
+    const key = `picks:${player}:${week}`;
+    await PICK_KV.put(key, JSON.stringify(picks));
+
+    console.log(`Picks saved successfully for ${player}, week ${week}`);
+    return new Response(JSON.stringify({ message: 'Picks saved successfully' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
     });
+}
 
-    // Create the JSON object to send
-    const dataToSend = JSON.stringify({
-        games: games  // Wrapping the games array inside an object with a key "games"
-    });
+async function handleGetPicks(request) {
+    const url = new URL(request.url);
+    const player = url.searchParams.get('player');
+    const week = url.searchParams.get('week');
 
-    console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
+    if (!player || !week) {
+        return new Response(JSON.stringify({ error: 'Missing player or week parameter' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const key = `picks:${player}:${week}`;
 
     try {
-        const response = await fetch(`https://your-worker-url.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: dataToSend
-        });
-
-        if (response.ok) {
-            alert("Your picks have been saved!");
-        } else {
-            alert("There was an issue saving your picks. Please try again.");
+        const storedPicks = await PICK_KV.get(key);
+        if (storedPicks === null) {
+            console.log(`No picks found for player ${player}, week ${week}`);
+            return new Response(JSON.stringify({ error: 'No picks found for this player and week' }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
+        console.log(`Retrieved picks for player ${player}, week ${week}`);
+        return new Response(storedPicks, {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
     } catch (error) {
-        console.error("Error saving picks:", error);
-        alert("An error occurred. Please try again later.");
+        console.error(`Failed to retrieve picks for ${player}, week ${week}:`, error);
+        return new Response(JSON.stringify({ error: 'Failed to retrieve picks', details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
 
