@@ -33,6 +33,7 @@
 
     // ... [Keep all other existing functions as they are] ...
     async function savePicks() {
+    console.log("savePicks function called");
     const selectedPlayer = document.getElementById('playerSelector').value;
     const selectedWeek = parseInt(document.getElementById("weekSelector").value);
     if (!selectedPlayer) {
