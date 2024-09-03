@@ -43,33 +43,33 @@
         return;
     }
 
-    const picks = {
-        player: selectedPlayer,
-        week: selectedWeek,
-        games: []
-    };
+    const games = [];
 
     document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
         const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
         if (select.value && confidenceSelect.value) {
-            picks.games.push({
-                game: select.name,
-                loser: select.value,
-                confidence: parseInt(confidenceSelect.value)
+            games.push({
+                game: `game${index}`,          // Naming the game
+                loser: select.value,           // Team selected as the loser
+                confidence: parseInt(confidenceSelect.value) // Confidence level as a number
             });
         }
     });
 
-    // Convert the picks object into a JSON string
-    const dataToSend = JSON.stringify(picks);
+    // Create the JSON object to send
+    const dataToSend = JSON.stringify({
+        games: games  // Wrapping the games array inside an object with a key "games"
+    });
+
+    console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
 
     try {
-        const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
+        const response = await fetch(`https://your-worker-url.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: dataToSend,
+            body: dataToSend
         });
 
         if (response.ok) {
