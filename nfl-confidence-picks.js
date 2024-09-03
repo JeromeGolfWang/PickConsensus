@@ -60,13 +60,16 @@
         }
     });
 
+    // Convert the picks object into a JSON string
+    const dataToSend = JSON.stringify(picks);
+
     try {
         const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(picks)
+            body: dataToSend,
         });
 
         if (response.ok) {
