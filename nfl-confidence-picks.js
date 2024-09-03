@@ -33,113 +33,57 @@
 
     // ... [Keep all other existing functions as they are] ...
 
-    // Update the savePicks function
-    addEventListener('fetch', event => {
-    event.respondWith(handleRequest(event.request));
-});
+    async function savePicks() {
+        const selectedPlayer = document.getElementById('playerSelector').value;
+        const selectedWeek = parseInt(document.getElementById("weekSelector").value);
 
-async function handleRequest(request) {
-    const url = new URL(request.url);
-    let response;
-
-    if (request.method === 'POST' && url.pathname === '/save-picks') {
-        response = await handleSavePicks(request);
-    } else if (request.method === 'GET' && url.pathname === '/get-picks') {
-        response = await handleGetPicks(request);
-    } else {
-        response = new Response(JSON.stringify({ error: 'Endpoint not found' }), { 
-            status: 404,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-
-    return response;
-}
-
-async function handleSavePicks(request) {
-    const url = new URL(request.url);
-    const player = url.searchParams.get('player');
-    const week = url.searchParams.get('week');
-
-    if (!player || !week) {
-        return new Response(JSON.stringify({ error: 'Missing player or week in URL parameters' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-
-    let data;
-    try {
-        data = await request.json();  // Expect JSON data
-    } catch (e) {
-        console.error('Error parsing JSON data:', e);
-        return new Response(JSON.stringify({ error: 'Error parsing JSON data', details: e.message }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-
-    const games = data.games;
-
-    if (!Array.isArray(games)) {
-        return new Response(JSON.stringify({ error: 'Games data is invalid' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-
-    const picks = { player, week: parseInt(week), games };
-    console.log('Saving picks:', picks);
-
-    // Save picks
-    const key = `picks:${player}:${week}`;
-    await PICK_KV.put(key, JSON.stringify(picks));
-
-    console.log(`Picks saved successfully for ${player}, week ${week}`);
-    return new Response(JSON.stringify({ message: 'Picks saved successfully' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-    });
-}
-
-async function handleGetPicks(request) {
-    const url = new URL(request.url);
-    const player = url.searchParams.get('player');
-    const week = url.searchParams.get('week');
-
-    if (!player || !week) {
-        return new Response(JSON.stringify({ error: 'Missing player or week parameter' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-
-    const key = `picks:${player}:${week}`;
-
-    try {
-        const storedPicks = await PICK_KV.get(key);
-        if (storedPicks === null) {
-            console.log(`No picks found for player ${player}, week ${week}`);
-            return new Response(JSON.stringify({ error: 'No picks found for this player and week' }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' }
-            });
+        if (!selectedPlayer) {
+            alert("Please select a player before saving.");
+            return;
         }
-        console.log(`Retrieved picks for player ${player}, week ${week}`);
-        return new Response(storedPicks, {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (error) {
-        console.error(`Failed to retrieve picks for ${player}, week ${week}:`, error);
-        return new Response(JSON.stringify({ error: 'Failed to retrieve picks', details: error.message }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-}
 
-    // Add a new function to retrieve picks
+        const picks = {
+            player: selectedPlayer,
+            week: selectedWeek,
+            games: []
+        };
+
+        document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+            const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+            if (select.value && confidenceSelect.value) {
+                picks.games.push({
+                    game: `game${index}`,
+                    loser: select.value,
+                    confidence: parseInt(confidenceSelect.value)
+                });
+            }
+        });
+
+        // Convert the picks object into a JSON string
+        const dataToSend = JSON.stringify(picks);
+
+        console.log("Data being sent:", dataToSend);  // Log the JSON string being sent to the server
+
+        try {
+            const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: dataToSend
+            });
+
+            if (response.ok) {
+                alert("Your picks have been saved!");
+            } else {
+                alert("There was an issue saving your picks. Please try again.");
+            }
+        } catch (error) {
+            console.error("Error saving picks:", error);
+            alert("An error occurred. Please try again later.");
+        }
+    }
+
     async function getPicks(player, week) {
         try {
             const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/get-picks?player=${player}&week=${week}`);
@@ -157,7 +101,6 @@ async function handleGetPicks(request) {
         }
     }
 
-    // Add an event listener to load picks when a player is selected
     document.getElementById('playerSelector').addEventListener('change', function() {
         const selectedPlayer = this.value;
         const selectedWeek = parseInt(document.getElementById('weekSelector').value);
@@ -166,6 +109,5 @@ async function handleGetPicks(request) {
         }
     });
 
-    // Ensure the fetchSchedule function is called when the page loads
     document.addEventListener('DOMContentLoaded', fetchSchedule);
 </script>
