@@ -89,6 +89,7 @@ async function handleSavePicks(request) {
     }
 
     const picks = { player, week: parseInt(week), games };
+    console.log('Saving picks:', picks);
 
     // Save picks
     const key = `picks:${player}:${week}`;
