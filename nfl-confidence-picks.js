@@ -74,7 +74,7 @@
         console.log("Fetch response received");
         const responseText = await response.text();
         console.log("Raw response:", responseText);
-
+        console.log("Data to send:", dataToSend);
         let responseData;
         try {
             responseData = JSON.parse(responseText);
