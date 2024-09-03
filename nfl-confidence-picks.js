@@ -31,72 +31,57 @@
             .catch(error => console.error("Failed to fetch or process data:", error));
     }
 
-    // ... [Keep all other existing functions as they are] ...
     async function savePicks() {
-    console.log("savePicks function called");
-    const selectedPlayer = document.getElementById('playerSelector').value;
-    const selectedWeek = parseInt(document.getElementById("weekSelector").value);
-    console.log(`Selected player: ${selectedPlayer}, Selected week: ${selectedWeek}`);
-    
-    if (!selectedPlayer) {
-        console.log("No player selected");
-        alert("Please select a player before saving.");
-        return;
-    }
-    
-    const games = [];
-    document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
-        const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
-        console.log(`Game ${index}: ${select.value}, Confidence: ${confidenceSelect ? confidenceSelect.value : 'N/A'}`);
-        if (select.value && confidenceSelect && confidenceSelect.value) {
-            games.push({
-                game: `game${index}`,
-                loser: select.value,
-                confidence: parseInt(confidenceSelect.value)
-            });
-        }
-    });
-
-    console.log(`Games array:`, games);
-    const dataToSend = JSON.stringify({ games });
-    console.log("Data being sent:", dataToSend);
-
-    try {
-        console.log("Sending fetch request");
-        const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: dataToSend
-        });
+        console.log("savePicks function called");
+        const selectedPlayer = document.getElementById('playerSelector').value;
+        const selectedWeek = parseInt(document.getElementById("weekSelector").value);
+        console.log(`Selected player: ${selectedPlayer}, Selected week: ${selectedWeek}`);
         
-        console.log("Fetch response received");
-        const responseText = await response.text();
-        console.log("Raw response:", responseText);
-        console.log("Data to send:", dataToSend);
-        let responseData;
-        try {
-            responseData = JSON.parse(responseText);
-            console.log("Parsed response data:", responseData);
-        } catch (error) {
-            console.error("Error parsing response JSON:", error);
-            alert("Received invalid response from server.");
+        if (!selectedPlayer) {
+            console.log("No player selected");
+            alert("Please select a player before saving.");
             return;
         }
+        
+        const games = [];
+        document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+            const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+            console.log(`Game ${index}: ${select.value}, Confidence: ${confidenceSelect ? confidenceSelect.value : 'N/A'}`);
+            if (select.value && confidenceSelect && confidenceSelect.value) {
+                games.push(`${index}:${select.value}:${confidenceSelect.value}`);
+            }
+        });
 
-        if (response.ok) {
-            console.log("Picks saved successfully");
-            alert("Your picks have been saved!");
-        } else {
-            console.error("Error saving picks:", responseData.error);
-            alert(`There was an issue saving your picks: ${responseData.error}`);
+        console.log(`Games array:`, games);
+        const dataToSend = games.join('|');
+        console.log("Data being sent:", dataToSend);
+
+        try {
+            console.log("Sending fetch request");
+            const response = await fetch(`https://soft-lab-bfdb.jay-finnigan.workers.dev/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: dataToSend
+            });
+            
+            console.log("Fetch response received");
+            const responseText = await response.text();
+            console.log("Raw response:", responseText);
+
+            if (response.ok) {
+                console.log("Picks saved successfully");
+                alert("Your picks have been saved!");
+            } else {
+                console.error("Error saving picks:", responseText);
+                alert(`There was an issue saving your picks: ${responseText}`);
+            }
+        } catch (error) {
+            console.error("Error in fetch operation:", error);
+            alert("An error occurred. Please try again later.");
         }
-    } catch (error) {
-        console.error("Error in fetch operation:", error);
-        alert("An error occurred. Please try again later.");
     }
-}
 
     async function getPicks(player, week) {
         try {
@@ -106,8 +91,13 @@
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const picks = await response.json();
-            console.log('Retrieved picks:', picks);
+            const storedData = await response.text();
+            console.log('Retrieved picks:', storedData);
+            const picks = storedData.split('|').map(entry => {
+                const [index, loser, confidence] = entry.split(':');
+                return { game: `game${index}`, loser, confidence: parseInt(confidence) };
+            });
+            console.log('Parsed picks:', picks);
             // You can add code here to display the retrieved picks in the UI
         } catch (error) {
             console.error('Error retrieving picks:', error);
