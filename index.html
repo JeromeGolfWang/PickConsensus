@@ -110,68 +110,83 @@
                     .catch(error => console.error("Failed to fetch or process CSV data:", error));
             }
 
-            function populateGamesForWeek(selectedWeek) {
-            const form = document.getElementById("picksForm");
-            form.innerHTML = '';
-
-            const weekGames = games.filter(game => game[headers.indexOf("Week")] === selectedWeek);
-            weekGames.forEach((game, index) => {
-                const visTm = game[headers.indexOf("VisTm")];
-                const homeTm = game[headers.indexOf("HomeTm")];
-                const day = game[headers.indexOf("Day")];
-                const date = game[headers.indexOf("Date")];
-                const time = game[headers.indexOf("Time")] || "TBA";
-
-                const div = document.createElement("div");
-                div.className = "game-row";
-                div.innerHTML = `
-                    <div class="game-info">
-                        ${visTm} @ ${homeTm}<br>
-                        <small>${day}, ${date} at ${time}</small>
-                    </div>
-                    <div class="game-selects">
-                        <select name="game${index}" class="loser-select">
-                            <option value="">Select Loser</option>
-                            <option value="${homeTm}">${homeTm}</option>
-                            <option value="${visTm}">${visTm}</option>
-                        </select>
-                        <select name="confidence${index}" class="confidence-select">
-                            <option value="">Confidence</option>
-                            ${Array.from({length: weekGames.length}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
-                        </select>
-                    </div>
-                `;
-                form.appendChild(div);
-            });
-
-            updateConfidenceOptions();
-
-            // Add event listeners to confidence selects
-            document.querySelectorAll('.confidence-select').forEach(select => {
-                select.addEventListener('change', updateConfidenceOptions);
-            });
-        }
-
-        function updateConfidenceOptions() {
-            const confidenceSelects = document.querySelectorAll('.confidence-select');
-            const selectedValues = new Set();
-
-            // Collect all selected values
-            confidenceSelects.forEach(select => {
-                if (select.value) selectedValues.add(select.value);
-            });
-
-            // Update each confidence select
-            confidenceSelects.forEach(select => {
-                Array.from(select.options).forEach(option => {
-                    if (option.value) {
-                        const isSelected = option.value === select.value;
-                        const isUsed = selectedValues.has(option.value);
-                        option.disabled = !isSelected && isUsed;
-                    }
+            function populateWeekSelector(weeks) {
+                const weekSelector = document.getElementById("weekSelector");
+                weeks.forEach(week => {
+                    const option = document.createElement("option");
+                    option.value = week;
+                    option.textContent = `Week ${week}`;
+                    weekSelector.appendChild(option);
                 });
-            });
-        }
+
+                weekSelector.addEventListener("change", function() {
+                    const selectedWeek = this.value;
+                    populateGamesForWeek(selectedWeek);
+                });
+            }
+
+            function populateGamesForWeek(selectedWeek) {
+                const form = document.getElementById("picksForm");
+                form.innerHTML = '';
+
+                const weekGames = games.filter(game => game[headers.indexOf("Week")] === selectedWeek);
+                weekGames.forEach((game, index) => {
+                    const visTm = game[headers.indexOf("VisTm")];
+                    const homeTm = game[headers.indexOf("HomeTm")];
+                    const day = game[headers.indexOf("Day")];
+                    const date = game[headers.indexOf("Date")];
+                    const time = game[headers.indexOf("Time")] || "TBA";
+
+                    const div = document.createElement("div");
+                    div.className = "game-row";
+                    div.innerHTML = `
+                        <div class="game-info">
+                            ${visTm} @ ${homeTm}<br>
+                            <small>${day}, ${date} at ${time}</small>
+                        </div>
+                        <div class="game-selects">
+                            <select name="game${index}" class="loser-select">
+                                <option value="">Select Loser</option>
+                                <option value="${homeTm}">${homeTm}</option>
+                                <option value="${visTm}">${visTm}</option>
+                            </select>
+                            <select name="confidence${index}" class="confidence-select">
+                                <option value="">Confidence</option>
+                                ${Array.from({length: weekGames.length}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                    form.appendChild(div);
+                });
+
+                updateConfidenceOptions();
+
+                // Add event listeners to confidence selects
+                document.querySelectorAll('.confidence-select').forEach(select => {
+                    select.addEventListener('change', updateConfidenceOptions);
+                });
+            }
+
+            function updateConfidenceOptions() {
+                const confidenceSelects = document.querySelectorAll('.confidence-select');
+                const selectedValues = new Set();
+
+                // Collect all selected values
+                confidenceSelects.forEach(select => {
+                    if (select.value) selectedValues.add(select.value);
+                });
+
+                // Update each confidence select
+                confidenceSelects.forEach(select => {
+                    Array.from(select.options).forEach(option => {
+                        if (option.value) {
+                            const isSelected = option.value === select.value;
+                            const isUsed = selectedValues.has(option.value);
+                            option.disabled = !isSelected && isUsed;
+                        }
+                    });
+                });
+            }
 
             async function savePicks() {
                 const selectedPlayer = document.getElementById('playerSelector').value;
@@ -183,7 +198,7 @@
                 }
 
                 const games = [];
-                document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+                document.querySelectorAll('.loser-select').forEach((select, index) => {
                     const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
                     if (select.value && confidenceSelect.value) {
                         games.push(`${index}:${select.value}:${confidenceSelect.value}`);
