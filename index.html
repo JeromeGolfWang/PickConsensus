@@ -352,24 +352,27 @@
 }
 
             function calculateScoreboard(allPicks) {
-                const scores = {};
-                allPicks.forEach(picks => {
-                    if (picks) {
-                        picks.split('|').forEach(pick => {
-                            const [, team, confidence] = pick.split(':');
-                            if (!scores[team]) {
-                                scores[team] = 0;
-                            }
-                            scores[team] += parseInt(confidence);
-                        });
+    const scores = {};
+    
+    allPicks.forEach(picks => {
+        if (picks) {
+            picks.split('|').forEach(pick => {
+                const [, team, confidence] = pick.split(':');
+                
+                if (team && !isNaN(confidence)) {  // Ensure both team and confidence are valid
+                    if (!scores[team]) {
+                        scores[team] = 0;
                     }
-                });
+                    scores[team] += parseInt(confidence);
+                }
+            });
+        }
+    });
 
-                return Object.entries(scores)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5)  // Only return the top 5 teams
-                    .map(([team, score]) => ({ team, score }));
-            }
+    return Object.entries(scores)
+        .sort((a, b) => b[1] - a[1])
+        .map(([team, score]) => ({ team, score }));
+}
 
             function displayScoreboard(scoreboard) {
                 const resultsDiv = document.getElementById('scoreboardResults');
