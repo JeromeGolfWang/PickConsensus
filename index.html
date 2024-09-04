@@ -6,103 +6,144 @@
     <title>NFL Pick'em Game</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .header-selectors {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        select {
-            padding: 5px;
-            font-size: 16px;
-        }
-        .game-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-        }
-        .game-info {
-            flex: 2;
-        }
-        .game-selects {
-            flex: 1;
-            display: flex;
-            justify-content: flex-end;
-        }
-        .game-selects select {
-            margin-left: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        select option:disabled {
-            color: #999;
-            background-color: #f0f0f0;
-        }
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        .button-container button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-        .button-container button:hover {
-            background-color: #45a049;
-        }
-        /* Consensus Scoreboard Styling */
-        #scoreboard {
-            margin-top: 40px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .week-link {
-            margin-right: 10px;
-            cursor: pointer;
-            color: blue;
-        }
-        /* Add custom styles for the image */
-        .losers-only-img {
-            width: 100%; /* Ensure the image fits within the layout */
-            height: auto;
-            margin-top: 20px;
-        }
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+/* Media query for mobile screens */
+@media (max-width: 600px) {
+    .header-selectors {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .game-row {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+
+    .game-info, .game-selects {
+        width: 100%;
+    }
+
+    .game-info {
+        margin-bottom: 10px;
+    }
+
+    .game-selects {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    button {
+        width: 100%;
+        padding: 15px;
+        font-size: 18px;
+    }
+
+    .button-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .button-container button {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    /* Ensure the image fits the width on mobile */
+    .losers-only-img {
+        width: 100%;
+        height: auto;
+    }
+}
+
+/* Default styling for desktop */
+.header-selectors {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+select {
+    padding: 5px;
+    font-size: 16px;
+}
+
+.game-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+.game-info {
+    flex: 2;
+}
+
+.game-selects {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.game-selects select {
+    margin-left: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+select option:disabled {
+    color: #999;
+    background-color: #f0f0f0;
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.button-container button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+.button-container button:hover {
+    background-color: #45a049;
+}
     </style>
 </head>
 <body>
