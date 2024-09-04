@@ -390,6 +390,7 @@ select option:disabled {
     console.log(`Fetching consensus for Week ${week}...`);
     
     try {
+        // Fetch picks for each player for the given week
         const picks = await Promise.all(players.map(player => 
             fetch(`${apiUrl}/get-picks?player=${player}&week=${week}&nocache=${new Date().getTime()}`) // Add cache buster
                 .then(response => response.text())
@@ -401,8 +402,12 @@ select option:disabled {
         ));
         
         console.log('Picks fetched:', picks);
+        
+        // Call to calculateScoreboard to process fresh data
         const scoreboard = calculateScoreboard(picks);
         console.log('Scoreboard calculated:', scoreboard);
+        
+        // Display the newly calculated scoreboard
         displayScoreboard(scoreboard);
     } catch (error) {
         console.error('Error fetching consensus data:', error);
@@ -411,17 +416,14 @@ select option:disabled {
 }
 
             function calculateScoreboard(allPicks) {
-    // Reset the scores to avoid accumulating old data
-    const scores = {};
-
+    const scores = {};  // Always reset scores when calculating anew
+    
     allPicks.forEach(picks => {
         if (picks) {
-            // Split the picks and add scores
             picks.split('|').forEach(pick => {
                 const [, team, confidence] = pick.split(':');
                 
-                // Only process if both team and confidence are valid
-                if (team && !isNaN(confidence)) {
+                if (team && !isNaN(confidence)) {  // Ensure both team and confidence are valid
                     if (!scores[team]) {
                         scores[team] = 0;
                     }
@@ -431,7 +433,6 @@ select option:disabled {
         }
     });
 
-    // Sort and map the scores to a scoreboard
     return Object.entries(scores)
         .sort((a, b) => b[1] - a[1])
         .map(([team, score]) => ({ team, score }));
