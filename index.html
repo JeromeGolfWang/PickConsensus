@@ -1,31 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- ... (keep existing head content) ... -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Pick'em Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header-selectors {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 5px;
+            font-size: 16px;
+        }
+        .game-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .game-info {
+            flex: 2;
+        }
+        .game-selects {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .game-selects select {
+            margin-left: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <!-- Week Selection -->
-    <select id="weekSelector">
-        <option value="">Select Week</option>
-        <!-- Options will be populated dynamically -->
-    </select>
+    <div class="header-selectors">
+        <select id="weekSelector">
+            <option value="">Select Week</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+        <select id="playerSelector">
+            <option value="">Select Player</option>
+            <option value="Dan">Dan</option>
+            <option value="Tim">Tim</option>
+            <option value="Patrick">Patrick</option>
+            <option value="Jay">Jay</option>
+        </select>
+    </div>
 
-    <!-- Player Selection -->
-    <select id="playerSelector">
-        <option value="">Select Player</option>
-        <option value="Dan">Dan</option>
-        <option value="Tim">Tim</option>
-        <option value="Patrick">Patrick</option>
-        <option value="Jay">Jay</option>
-    </select>
+    <form id="picksForm">
+        <!-- Games will be populated here -->
+    </form>
 
-    <!-- Form for Picks -->
-    <form id="picksForm"></form>
-
-    <!-- Button to Save Picks -->
     <button id="savePicksButton">Save Picks</button>
-
-    <!-- Button to View Week Consensus -->
     <button id="consensusButton" style="display:none;">View Week Consensus</button>
 
     <script>
@@ -72,20 +122,25 @@
             }
 
             function populateGamesForWeek(selectedWeek) {
-                const form = document.getElementById("picksForm");
-                form.innerHTML = '';
+            const form = document.getElementById("picksForm");
+            form.innerHTML = '';
 
-                const weekGames = games.filter(game => game[headers.indexOf("Week")] === selectedWeek);
-                weekGames.forEach((game, index) => {
-                    const visTm = game[headers.indexOf("VisTm")];
-                    const homeTm = game[headers.indexOf("HomeTm")];
-                    const day = game[headers.indexOf("Day")];
-                    const date = game[headers.indexOf("Date")];
-                    const time = game[headers.indexOf("Time")];
+            const weekGames = games.filter(game => game[headers.indexOf("Week")] === selectedWeek);
+            weekGames.forEach((game, index) => {
+                const visTm = game[headers.indexOf("VisTm")];
+                const homeTm = game[headers.indexOf("HomeTm")];
+                const day = game[headers.indexOf("Day")];
+                const date = game[headers.indexOf("Date")];
+                const time = game[headers.indexOf("Time")];
 
-                    const div = document.createElement("div");
-                    div.innerHTML = `
-                        <label>Week ${selectedWeek}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})</label>
+                const div = document.createElement("div");
+                div.className = "game-row";
+                div.innerHTML = `
+                    <div class="game-info">
+                        ${visTm} @ ${homeTm}<br>
+                        <small>${day}, ${date} at ${time}</small>
+                    </div>
+                    <div class="game-selects">
                         <select name="game${index}">
                             <option value="">Select Loser</option>
                             <option value="${homeTm}">${homeTm}</option>
@@ -94,12 +149,13 @@
                         <select name="confidence${index}">
                             ${Array.from({length: weekGames.length}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
                         </select>
-                    `;
-                    form.appendChild(div);
-                });
+                    </div>
+                `;
+                form.appendChild(div);
+            });
 
-                updateConfidenceOptions();
-            }
+            updateConfidenceOptions();
+        }
 
             function updateConfidenceOptions() {
                 // ... (keep existing updateConfidenceOptions function) ...
