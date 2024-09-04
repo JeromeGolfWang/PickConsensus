@@ -13,12 +13,29 @@
     line-height: 1.6;
 }
 
-/* Media query for mobile screens */
+#consensusWeekSelector {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.week-link {
+    margin-right: 15px; /* Add space between each week */
+    margin-bottom: 10px; /* Add vertical spacing */
+    color: blue;
+    text-decoration: underline;
+}
+
+.week-link:hover {
+    color: darkblue; /* Optional: Change color on hover */
+}
+
+/* For mobile */
 @media (max-width: 600px) {
-    .header-selectors {
-        flex-direction: column;
-        align-items: flex-start;
+    .week-link {
+        margin-right: 10px; /* Slightly smaller spacing for mobile */
     }
+}
 
     .game-row {
         flex-direction: column;
