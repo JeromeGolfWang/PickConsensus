@@ -16,10 +16,10 @@ async function handleRequest(request) {
     } else if (request.method === 'GET' && url.pathname === '/get-picks') {
         response = await handleGetPicks(request);
     } else {
-        response = new Response(JSON.stringify({ error: 'Endpoint not found' }), { 
+        response = new Response('Endpoint not found', { 
             status: 404,
             headers: { 
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain',
                 'Access-Control-Allow-Origin': ALLOWED_ORIGIN 
             }
         });
