@@ -318,21 +318,37 @@
                 });
             }
 
-            function fetchConsensus(week) {
-                const players = ['Dan', 'Tim', 'Patrick', 'Jay'];
-                console.log(`Fetching consensus for Week ${week}...`);
-                Promise.all(players.map(player => 
-                    fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`)
-                        .then(response => response.json())
-                        .catch(() => null) // Handle missing data
-                )).then(allPicks => {
-                    const scoreboard = calculateScoreboard(allPicks);
-                    displayScoreboard(scoreboard);
-                }).catch(error => {
-                    console.error('Error fetching consensus data:', error);
-                    document.getElementById('scoreboardResults').innerHTML = 'Error fetching consensus data.';
-                });
-            }
+            async function fetchConsensus(week) {
+    const players = ['Dan', 'Tim', 'Patrick', 'Jay'];
+    console.log(`Fetching consensus for Week ${week}...`);
+    
+    try {
+        const picks = await Promise.all(players.map(player => 
+            fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`)
+                .then(response => {
+                    console.log(`Response for ${player}, Week ${week}:`, response);
+                    if (!response.ok) {
+                        throw new Error(`No data found for ${player} in week ${week}`);
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error(error.message);
+                    return null; // Return null if there was an error or no data
+                })
+        ));
+        
+        console.log('Picks fetched:', picks); // Check if picks are successfully fetched
+
+        const scoreboard = calculateScoreboard(picks);
+        console.log('Scoreboard calculated:', scoreboard); // Check the processed scoreboard data
+
+        displayScoreboard(scoreboard);  // Proceed to display the data
+    } catch (error) {
+        console.error('Error fetching consensus data:', error);
+        document.getElementById('scoreboardResults').innerHTML = 'Error fetching consensus data.';
+    }
+}
 
             function calculateScoreboard(allPicks) {
                 const scores = {};
