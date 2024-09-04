@@ -411,14 +411,17 @@ select option:disabled {
 }
 
             function calculateScoreboard(allPicks) {
+    // Reset the scores to avoid accumulating old data
     const scores = {};
-    
+
     allPicks.forEach(picks => {
         if (picks) {
+            // Split the picks and add scores
             picks.split('|').forEach(pick => {
                 const [, team, confidence] = pick.split(':');
                 
-                if (team && !isNaN(confidence)) {  // Ensure both team and confidence are valid
+                // Only process if both team and confidence are valid
+                if (team && !isNaN(confidence)) {
                     if (!scores[team]) {
                         scores[team] = 0;
                     }
@@ -428,20 +431,21 @@ select option:disabled {
         }
     });
 
+    // Sort and map the scores to a scoreboard
     return Object.entries(scores)
         .sort((a, b) => b[1] - a[1])
         .map(([team, score]) => ({ team, score }));
 }
 
-            function displayScoreboard(scoreboard) {
-                const resultsDiv = document.getElementById('scoreboardResults');
-                let html = '<table><tr><th>Rank</th><th>Team</th><th>Loser Rating</th></tr>';
-                scoreboard.forEach(({ team, score }, index) => {
-                    html += `<tr><td>${index + 1}</td><td>${team}</td><td>${score}</td></tr>`;
-                });
-                html += '</table>';
-                resultsDiv.innerHTML = html;
-            }
+function displayScoreboard(scoreboard) {
+    const resultsDiv = document.getElementById('scoreboardResults');
+    let html = '<table><tr><th>Rank</th><th>Team</th><th>Loser Rating</th></tr>';
+    scoreboard.forEach(({ team, score }, index) => {
+        html += `<tr><td>${index + 1}</td><td>${team}</td><td>${score}</td></tr>`;
+    });
+    html += '</table>';
+    resultsDiv.innerHTML = html;
+}
         });
     </script>
 </body>
