@@ -1,204 +1,258 @@
-document.addEventListener('DOMContentLoaded', function () {
-    let games = [];
-    let headers = [];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Pick'em Game</title>
+    
+    <!-- Insert CSS directly into the HTML -->
+    <style>
+        select {
+            width: 150px; /* Adjust the width as needed */
+            padding: 5px; /* Adjust padding for better spacing */
+            font-size: 14px; /* Adjust font size for clarity */
+        }
 
-    // Define the sheet URL
-    const sheetUrl = './NFL Schedule - Sheet1.csv'; // Replace with your actual CSV file URL
-    const apiUrl = 'https://soft-lab-bfdb.jay-finnigan.workers.dev'; // Your Cloudflare Worker endpoint
+        label {
+            display: inline-block;
+            width: 250px; /* Adjust width as needed */
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Week Selection -->
+    <div>
+        <select id="weekSelector">
+            <option value="">Select Week</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+    </div>
 
-    // Fetch the CSV file and process it
-    function fetchSchedule() {
-        fetch(sheetUrl)
-            .then(response => response.text())
-            .then(data => {
-                // Split the CSV text into rows and columns
-                const rows = data.trim().split('\n').map(row => row.split(','));
+    <!-- Player Selection -->
+    <select id="playerSelector">
+        <option value="">Select Player</option>
+        <option value="Dan">Dan</option>
+        <option value="Tim">Tim</option>
+        <option value="Patrick">Patrick</option>
+        <option value="Jay">Jay</option>
+    </select>
 
-                // Extract headers and game data
-                headers = rows[0];  // First row is the headers
-                games = rows.slice(1);  // The rest are game data
+    <!-- Form for Picks -->
+    <form id="picksForm"></form>
 
-                console.log("Headers:", headers);
-                console.log("Games Data:", games);
+    <!-- Button to Save Picks -->
+    <button id="savePicksButton">Save Picks</button>
 
-                // Populate the week selector dropdown
-                const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
-                console.log("All Weeks:", allWeeks);
-                populateWeekSelector(allWeeks);
+    <!-- Button to View Week Consensus -->
+    <button id="consensusButton" style="display:none;" onclick="window.location.href='/consensus.html'">View Week Consensus</button>
 
-                // Show the current week's games initially
-                populateGamesForWeek(getCurrentWeek());
-            })
-            .catch(error => console.error("Failed to fetch or process data:", error));
-    }
+    <!-- Insert JavaScript at the end of the body -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let games = [];
+            let headers = [];
 
-    // Determine the current week based on the current date
-    function getCurrentWeek() {
-        const startDate = new Date("2024-09-05"); // NFL season start date
-        const currentDate = new Date();
-        const timeDifference = currentDate - startDate;
-        const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-        const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
+            // Define the sheet URL
+            const sheetUrl = './NFL Schedule - Sheet1.csv'; // Replace with your actual CSV file URL
+            const apiUrl = 'https://soft-lab-bfdb.jay-finnigan.workers.dev'; // Your Cloudflare Worker endpoint
 
-        console.log("Current Week:", currentWeek);
-        return currentWeek;
-    }
+            // Fetch the CSV file and process it
+            function fetchSchedule() {
+                fetch(sheetUrl)
+                    .then(response => response.text())
+                    .then(data => {
+                        // Split the CSV text into rows and columns
+                        const rows = data.trim().split('\n').map(row => row.split(','));
 
-    // Populate the week selector dropdown
-    function populateWeekSelector(weeks) {
-        const weekSelector = document.getElementById("weekSelector");
+                        // Extract headers and game data
+                        headers = rows[0];  // First row is the headers
+                        games = rows.slice(1);  // The rest are game data
 
-        weeks.forEach(week => {
-            const option = document.createElement("option");
-            option.value = week;
-            option.textContent = `Week ${week}`;
-            weekSelector.appendChild(option);
-        });
+                        console.log("Headers:", headers);
+                        console.log("Games Data:", games);
 
-        // Automatically select the current week
-        weekSelector.value = getCurrentWeek();
+                        // Populate the week selector dropdown
+                        const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+                        console.log("All Weeks:", allWeeks);
+                        populateWeekSelector(allWeeks);
 
-        weekSelector.addEventListener("change", function() {
-            const selectedWeek = parseInt(weekSelector.value);
-            populateGamesForWeek(selectedWeek);
-        });
-    }
-
-    // Populate games based on the selected week
-    function populateGamesForWeek(selectedWeek) {
-        const form = document.getElementById("picksForm");
-        form.innerHTML = ''; // Clear previous games
-
-        const currentWeekGames = games.filter(game => parseInt(game[headers.indexOf("Week")]) === selectedWeek);
-        currentWeekGames.forEach((game, index) => {
-            const weekIndex = headers.indexOf("Week");
-            const dayIndex = headers.indexOf("Day");
-            const dateIndex = headers.indexOf("Date");
-            const visTmIndex = headers.indexOf("VisTm");
-            const homeTmIndex = headers.indexOf("HomeTm");
-            const timeIndex = headers.indexOf("Time");
-
-            const week = game[weekIndex];
-            const day = game[dayIndex];
-            const date = game[dateIndex];
-            const visTm = game[visTmIndex];
-            const homeTm = game[homeTmIndex];
-            const time = game[timeIndex] || "TBA";
-
-            // Create a container div for each game
-            const div = document.createElement("div");
-            div.className = "game";
-
-            // Create and set up the label
-            const label = document.createElement("label");
-            label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
-
-            // Create and set up the select dropdown for picking the loser
-            const select = document.createElement("select");
-            select.name = `game${index}`;
-            select.required = true;
-            select.innerHTML = `
-                <option value="">Select Loser</option>
-                <option value="${homeTm}">${homeTm}</option>
-                <option value="${visTm}">${visTm}</option>
-            `;
-
-            // Create and set up the confidence dropdown with the correct range
-            const confidenceSelect = document.createElement("select");
-            confidenceSelect.name = `confidence${index}`;
-            confidenceSelect.required = true;
-            for (let i = 1; i <= currentWeekGames.length; i++) {
-                const option = document.createElement("option");
-                option.value = i;
-                option.text = i;
-                confidenceSelect.appendChild(option);
+                        // Show the current week's games initially
+                        populateGamesForWeek(getCurrentWeek());
+                    })
+                    .catch(error => console.error("Failed to fetch or process data:", error));
             }
 
-            // Append elements to the container div
-            div.appendChild(label);
-            div.appendChild(select);
-            div.appendChild(confidenceSelect);
+            // Determine the current week based on the current date
+            function getCurrentWeek() {
+                const startDate = new Date("2024-09-05"); // NFL season start date
+                const currentDate = new Date();
+                const timeDifference = currentDate - startDate;
+                const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+                const currentWeek = Math.floor(daysDifference / 7) + 1; // Add 1 to make it 1-based
 
-            // Append the container div to the form
-            form.appendChild(div);
-        });
+                console.log("Current Week:", currentWeek);
+                return currentWeek;
+            }
 
-        // Now, add the event listener to update options after the games are populated
-        updateConfidenceOptions(); // Initialize the options once after populating
+            // Populate the week selector dropdown
+            function populateWeekSelector(weeks) {
+                const weekSelector = document.getElementById("weekSelector");
 
-        document.querySelectorAll('select[name^="confidence"]').forEach(select => {
-            select.addEventListener('change', updateConfidenceOptions);
-        });
-    }
+                weeks.forEach(week => {
+                    const option = document.createElement("option");
+                    option.value = week;
+                    option.textContent = `Week ${week}`;
+                    weekSelector.appendChild(option);
+                });
 
-    // Function to prevent duplicate confidence numbers
-    function updateConfidenceOptions() {
-        const allSelectedValues = Array.from(document.querySelectorAll('select[name^="confidence"]'))
-            .map(select => select.value)
-            .filter(value => value !== "");
+                // Automatically select the current week
+                weekSelector.value = getCurrentWeek();
 
-        document.querySelectorAll('select[name^="confidence"]').forEach(select => {
-            const currentValue = select.value;
+                weekSelector.addEventListener("change", function() {
+                    const selectedWeek = parseInt(weekSelector.value);
+                    populateGamesForWeek(selectedWeek);
+                });
+            }
 
-            Array.from(select.options).forEach(option => {
-                if (option.value === "" || option.value === currentValue) {
-                    option.disabled = false;
-                } else {
-                    option.disabled = allSelectedValues.includes(option.value);
+            // Populate games based on the selected week
+            function populateGamesForWeek(selectedWeek) {
+                const form = document.getElementById("picksForm");
+                form.innerHTML = ''; // Clear previous games
+
+                const currentWeekGames = games.filter(game => parseInt(game[headers.indexOf("Week")]) === selectedWeek);
+                currentWeekGames.forEach((game, index) => {
+                    const weekIndex = headers.indexOf("Week");
+                    const dayIndex = headers.indexOf("Day");
+                    const dateIndex = headers.indexOf("Date");
+                    const visTmIndex = headers.indexOf("VisTm");
+                    const homeTmIndex = headers.indexOf("HomeTm");
+                    const timeIndex = headers.indexOf("Time");
+
+                    const week = game[weekIndex];
+                    const day = game[dayIndex];
+                    const date = game[dateIndex];
+                    const visTm = game[visTmIndex];
+                    const homeTm = game[homeTmIndex];
+                    const time = game[timeIndex] || "TBA";
+
+                    // Create a container div for each game
+                    const div = document.createElement("div");
+                    div.className = "game";
+
+                    // Create and set up the label
+                    const label = document.createElement("label");
+                    label.textContent = `Week ${week}: ${visTm} @ ${homeTm} (${day}, ${date} at ${time})`;
+
+                    // Create and set up the select dropdown for picking the loser
+                    const select = document.createElement("select");
+                    select.name = `game${index}`;
+                    select.required = true;
+                    select.innerHTML = `
+                        <option value="">Select Loser</option>
+                        <option value="${homeTm}">${homeTm}</option>
+                        <option value="${visTm}">${visTm}</option>
+                    `;
+
+                    // Create and set up the confidence dropdown with the correct range
+                    const confidenceSelect = document.createElement("select");
+                    confidenceSelect.name = `confidence${index}`;
+                    confidenceSelect.required = true;
+                    for (let i = 1; i <= currentWeekGames.length; i++) {
+                        const option = document.createElement("option");
+                        option.value = i;
+                        option.text = i;
+                        confidenceSelect.appendChild(option);
+                    }
+
+                    // Append elements to the container div
+                    div.appendChild(label);
+                    div.appendChild(select);
+                    div.appendChild(confidenceSelect);
+
+                    // Append the container div to the form
+                    form.appendChild(div);
+                });
+
+                // Now, add the event listener to update options after the games are populated
+                updateConfidenceOptions(); // Initialize the options once after populating
+
+                document.querySelectorAll('select[name^="confidence"]').forEach(select => {
+                    select.addEventListener('change', updateConfidenceOptions);
+                });
+            }
+
+            // Function to prevent duplicate confidence numbers
+            function updateConfidenceOptions() {
+                const allSelectedValues = Array.from(document.querySelectorAll('select[name^="confidence"]'))
+                    .map(select => select.value)
+                    .filter(value => value !== "");
+
+                document.querySelectorAll('select[name^="confidence"]').forEach(select => {
+                    const currentValue = select.value;
+
+                    Array.from(select.options).forEach(option => {
+                        if (option.value === "" || option.value === currentValue) {
+                            option.disabled = false;
+                        } else {
+                            option.disabled = allSelectedValues.includes(option.value);
+                        }
+                    });
+                });
+            }
+
+            // Save the picks
+            async function savePicks() {
+                const selectedPlayer = document.getElementById('playerSelector').value;
+                const selectedWeek = parseInt(document.getElementById("weekSelector").value);
+
+                if (!selectedPlayer) {
+                    alert("Please select a player before saving.");
+                    return;
                 }
-            });
-        });
-    }
 
-    // Save the picks
-    async function savePicks() {
-        const selectedPlayer = document.getElementById('playerSelector').value;
-        const selectedWeek = parseInt(document.getElementById("weekSelector").value);
+                // Collect the picks
+                const games = [];
+                document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+                    const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+                    if (select.value && confidenceSelect.value) {
+                        games.push(`${index}:${select.value}:${confidenceSelect.value}`);
+                    }
+                });
 
-        if (!selectedPlayer) {
-            alert("Please select a player before saving.");
-            return;
-        }
+                const dataToSend = games.join('|');
+                console.log(`Sending data for player ${selectedPlayer}, week ${selectedWeek}:`, dataToSend);
 
-        // Collect the picks
-        const games = [];
-        document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
-            const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
-            if (select.value && confidenceSelect.value) {
-                games.push(`${index}:${select.value}:${confidenceSelect.value}`);
-            }
-        });
+                try {
+                    const response = await fetch(`${apiUrl}/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        },
+                        body: dataToSend
+                    });
 
-        const dataToSend = games.join('|');
-        console.log(`Sending data for player ${selectedPlayer}, week ${selectedWeek}:`, dataToSend);
+                    if (response.ok) {
+                        alert('Your picks have been saved successfully!');
+                        console.log('Picks saved successfully');
+                        document.getElementById('consensusButton').style.display = 'block';
+                    } else {
+                        const errorText = await response.text();
+                        console.error('Error saving picks:', errorText);
+                        alert(`Error saving picks: ${errorText}`);
+                       }
+                   } catch (error) {
+                       console.error('Error in fetch operation:', error);
+                       alert('An error occurred while saving your picks. Please try again.');
+                   }
+               }
 
-        try {
-            const response = await fetch(`${apiUrl}/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain'
-                },
-                body: dataToSend
-            });
+               // Event listener for the save button
+               document.querySelector('button[onclick="savePicks()"]').addEventListener('click', savePicks);
 
-            if (response.ok) {
-                alert('Your picks have been saved successfully!');
-                console.log('Picks saved successfully');
-                document.getElementById('consensusButton').style.display = 'block';
-            } else {
-                const errorText = await response.text();
-                console.error('Error saving picks:', errorText);
-                alert(`Error saving picks: ${errorText}`);
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-            alert('An error occurred while saving your picks. Please try again.');
-        }
-    }
-
-    // Event listener for the save button
-    document.querySelector('button[onclick="savePicks()"]').addEventListener('click', savePicks);
-
-    // Ensure the fetchSchedule function is called when the page loads
-    fetchSchedule();
-});
+               // Ensure the fetchSchedule function is called when the page loads
+               fetchSchedule();
+           });
+       </script>
+   </body>
+   </html>
