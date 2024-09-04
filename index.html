@@ -282,20 +282,25 @@
             fetchSchedule();
 
             // Consensus Scoreboard Logic
-
 function populateConsensusWeekSelector(weeks) {
     const weekLinksContainer = document.getElementById("consensusWeekSelector");
     
+    // Ensure the container exists
+    if (!weekLinksContainer) {
+        console.error('Consensus Week Selector not found.');
+        return;
+    }
+
     // Clear any existing content
     weekLinksContainer.innerHTML = '';
 
     // Create hyperlinks for each week
     weeks.forEach(week => {
-        const link = document.createElement('a');
+        const link = document.createElement('a');  // Create an <a> element
         link.href = "#";
-        link.textContent = `Week ${week}`;
-        link.dataset.week = week;  // Add week as data attribute
-        link.classList.add('week-link');
+        link.textContent = `Week ${week}`;  // Set the visible text for the link
+        link.dataset.week = week;  // Store the week number as a data attribute
+        link.classList.add('week-link');  // Optional: Add a class for styling
         
         // Add event listener to fetch consensus on click
         link.addEventListener('click', function(event) {
@@ -304,60 +309,20 @@ function populateConsensusWeekSelector(weeks) {
         });
         
         // Add the link to the container
-        weekLinksContainer.appendChild(link);
+        weekLinksContainer.appendChild(link);  // Append each link to the container
     });
 }
 
-async function fetchConsensus(week) {
-    const players = ['Dan', 'Tim', 'Patrick', 'Jay'];
-    try {
-        const picks = await Promise.all(players.map(player => 
-            fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`)
-                .then(response => response.json())
-                .catch(() => null) // Handle missing data
-        ));
-
-        const scoreboard = calculateScoreboard(picks);
-        displayScoreboard(scoreboard, week);  // Pass the week number to display
-    } catch (error) {
-        console.error('Error fetching consensus data:', error);
-        document.getElementById('scoreboardResults').innerHTML = 'Error fetching consensus data.';
-    }
+// Ensure games are loaded before populating weeks
+function initializeConsensusWeeks() {
+    const consensusWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+    populateConsensusWeekSelector(consensusWeeks);
 }
 
-function calculateScoreboard(allPicks) {
-    const scores = {};
-    allPicks.forEach(picks => {
-        if (picks) {
-            picks.split('|').forEach(pick => {
-                const [, team, confidence] = pick.split(':');
-                if (!scores[team]) {
-                    scores[team] = 0;
-                }
-                scores[team] += parseInt(confidence);
-            });
-        }
-    });
-
-    return Object.entries(scores)
-        .sort((a, b) => b[1] - a[1])
-        .map(([team, score]) => ({ team, score }));
-}
-
-function displayScoreboard(scoreboard, week) {
-    const resultsDiv = document.getElementById('scoreboardResults');
-    let html = `<h3>Consensus Scoreboard for Week ${week}</h3>`;
-    html += '<table><tr><th>Rank</th><th>Team</th><th>Cumulative Score</th></tr>';
-    scoreboard.forEach(({ team, score }, index) => {
-        html += `<tr><td>${index + 1}</td><td>${team}</td><td>${score}</td></tr>`;
-    });
-    html += '</table>';
-    resultsDiv.innerHTML = html;
-}
-
-// Initialize consensus week selector
-const consensusWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
-populateConsensusWeekSelector(consensusWeeks);
+// Call this function after the schedule is fetched and games are populated
+fetchSchedule().then(() => {
+    initializeConsensusWeeks();  // Populate the consensus week links after fetching the schedule
+});
         });
     </script>
 </body>
