@@ -59,29 +59,36 @@
 
             // Fetch the CSV file and process it
             function fetchSchedule() {
-                fetch(sheetUrl)
-                    .then(response => response.text())
-                    .then(data => {
-                        // Split the CSV text into rows and columns
-                        const rows = data.trim().split('\n').map(row => row.split(','));
+    console.log("Fetching CSV schedule...");
+    fetch(sheetUrl)
+        .then(response => {
+            console.log("CSV file fetched:", response);
+            return response.text();
+        })
+        .then(data => {
+            console.log("CSV data received:", data);
+            // Split the CSV text into rows and columns
+            const rows = data.trim().split('\n').map(row => row.split(','));
 
-                        // Extract headers and game data
-                        headers = rows[0];  // First row is the headers
-                        games = rows.slice(1);  // The rest are game data
+            // Extract headers and game data
+            headers = rows[0];  // First row is the headers
+            games = rows.slice(1);  // The rest are game data
 
-                        console.log("Headers:", headers);
-                        console.log("Games Data:", games);
+            console.log("Headers:", headers);
+            console.log("Games Data:", games);
 
-                        // Populate the week selector dropdown
-                        const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
-                        console.log("All Weeks:", allWeeks);
-                        populateWeekSelector(allWeeks);
+            // Populate the week selector dropdown
+            const allWeeks = [...new Set(games.map(game => game[headers.indexOf("Week")]))];
+            console.log("All Weeks:", allWeeks);
+            populateWeekSelector(allWeeks);
 
-                        // Show the current week's games initially
-                        populateGamesForWeek(getCurrentWeek());
-                    })
-                    .catch(error => console.error("Failed to fetch or process data:", error));
-            }
+            // Show the current week's games initially
+            populateGamesForWeek(getCurrentWeek());
+        })
+        .catch(error => {
+            console.error("Failed to fetch or process CSV data:", error);
+        });
+}
 
             // Determine the current week based on the current date
             function getCurrentWeek() {
