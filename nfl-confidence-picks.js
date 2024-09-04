@@ -1,144 +1,89 @@
-const TOTAL_WEEKS = 18;
-const ALLOWED_ORIGIN = 'https://pickconsensus.pages.dev'; // Replace with your frontend domain
+document.addEventListener('DOMContentLoaded', function () {
+    const TOTAL_WEEKS = 18;
+    const ALLOWED_ORIGIN = 'https://pickconsensus.pages.dev'; // Your frontend domain
+    const apiUrl = 'https://soft-lab-bfdb.jay-finnigan.workers.dev'; // Your Cloudflare Worker endpoint
 
-addEventListener('fetch', event => {
-    event.respondWith(handleRequest(event.request));
+    // Function to handle saving picks
+    async function savePicks() {
+        const selectedPlayer = document.getElementById('playerSelector').value;
+        const selectedWeek = parseInt(document.getElementById('weekSelector').value);
+        if (!selectedPlayer || isNaN(selectedWeek)) {
+            alert('Please select a player and a valid week.');
+            return;
+        }
+
+        // Collect picks from the page
+        const games = [];
+        document.querySelectorAll('select[name^="game"]').forEach((select, index) => {
+            const confidenceSelect = document.querySelector(`select[name="confidence${index}"]`);
+            if (select.value && confidenceSelect && confidenceSelect.value) {
+                games.push(`${index}:${select.value}:${confidenceSelect.value}`);
+            }
+        });
+
+        // Prepare data for sending
+        const dataToSend = games.join('|');
+        console.log(`Sending data for player ${selectedPlayer}, week ${selectedWeek}:`, dataToSend);
+
+        try {
+            const response = await fetch(`${apiUrl}/save-picks?player=${selectedPlayer}&week=${selectedWeek}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: dataToSend
+            });
+
+            if (response.ok) {
+                alert('Your picks have been saved successfully!');
+                console.log('Picks saved successfully');
+            } else {
+                const errorText = await response.text();
+                console.error('Error saving picks:', errorText);
+                alert(`Error saving picks: ${errorText}`);
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('An error occurred while saving your picks. Please try again.');
+        }
+    }
+
+    // Function to handle loading picks
+    async function loadPicks(player, week) {
+        if (!player || isNaN(week)) {
+            alert('Please select a player and a valid week.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`);
+            if (response.ok) {
+                const storedData = await response.text();
+                console.log('Retrieved picks:', storedData);
+                // You can add code here to populate the UI with the retrieved picks
+            } else {
+                console.error('Error retrieving picks:', await response.text());
+                alert('No picks found for this player and week.');
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('An error occurred while loading the picks. Please try again.');
+        }
+    }
+
+    // Event listener for the save button
+    document.getElementById('saveButton').addEventListener('click', savePicks);
+
+    // Example: Event listener for loading picks when a player or week is selected
+    document.getElementById('playerSelector').addEventListener('change', function () {
+        const selectedPlayer = this.value;
+        const selectedWeek = parseInt(document.getElementById('weekSelector').value);
+        loadPicks(selectedPlayer, selectedWeek);
+    });
+
+    document.getElementById('weekSelector').addEventListener('change', function () {
+        const selectedPlayer = document.getElementById('playerSelector').value;
+        const selectedWeek = parseInt(this.value);
+        loadPicks(selectedPlayer, selectedWeek);
+    });
 });
-
-async function handleRequest(request) {
-    const url = new URL(request.url);
-    let response;
-
-    if (request.method === 'OPTIONS') {
-        response = handleOptionsRequest(request);
-    } else if (request.method === 'POST' && url.pathname === '/save-picks') {
-        response = await handleSavePicks(request);
-    } else if (request.method === 'GET' && url.pathname === '/get-picks') {
-        response = await handleGetPicks(request);
-    } else {
-        response = new Response('Endpoint not found', { 
-            status: 404,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN 
-            }
-        });
-    }
-
-    return response;
-}
-
-function handleOptionsRequest(request) {
-    const headers = {
-        'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-    };
-    return new Response(null, { status: 204, headers });
-}
-
-async function handleSavePicks(request) {
-    const url = new URL(request.url);
-    const player = url.searchParams.get('player');
-    const week = parseInt(url.searchParams.get('week'));
-
-    console.log(`Attempting to save picks for player: ${player}, week: ${week}`);
-
-    if (!player || !week || week < 1 || week > TOTAL_WEEKS) {
-        console.log('Invalid player or week');
-        return new Response('Invalid player or week', {
-            status: 400,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-            }
-        });
-    }
-
-    try {
-        const rawBody = await request.text();
-        console.log('Received raw body:', rawBody);
-        
-        if (!rawBody) {
-            console.log('Empty request body');
-            return new Response('Empty request body', {
-                status: 400,
-                headers: { 
-                    'Content-Type': 'text/plain',
-                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-                }
-            });
-        }
-
-        // Save the raw body directly as a string
-        const key = `picks:${player}:${week}`;
-        await PICK_KV.put(key, rawBody);
-        console.log('Picks saved successfully');
-
-        return new Response('Picks saved successfully', {
-            status: 200,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-            }
-        });
-    } catch (error) {
-        console.error(`Failed to save picks for ${player}, week ${week}:`, error);
-        return new Response('Error processing request', {
-            status: 500,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-            }
-        });
-    }
-}
-
-async function handleGetPicks(request) {
-    const url = new URL(request.url);
-    const player = url.searchParams.get('player');
-    const week = parseInt(url.searchParams.get('week'));
-
-    if (!player || !week || week < 1 || week > TOTAL_WEEKS) {
-        return new Response('Invalid player or week', {
-            status: 400,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-            }
-        });
-    }
-
-    const key = `picks:${player}:${week}`;
-
-    try {
-        const storedPicks = await PICK_KV.get(key);
-        if (storedPicks === null) {
-            console.log(`No picks found for player ${player}, week ${week}`);
-            return new Response('No picks found for this player and week', {
-                status: 404,
-                headers: { 
-                    'Content-Type': 'text/plain',
-                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-                }
-            });
-        }
-        console.log(`Retrieved picks for player ${player}, week ${week}`);
-        return new Response(storedPicks, {
-            status: 200,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-            }
-        });
-    } catch (error) {
-        console.error(`Failed to retrieve picks for ${player}, week ${week}:`, error);
-        return new Response('Failed to retrieve picks', {
-            status: 500,
-            headers: { 
-                'Content-Type': 'text/plain',
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN
-            }
-        });
-    }
-}
