@@ -3,69 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Week Consensus</title>
+    <title>NFL Pick'em Consensus</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        select {
+            padding: 5px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Week Consensus and Leaderboard</h1>
+    <h1>NFL Pick'em Consensus</h1>
+    <select id="weekSelector">
+        <option value="">Select Week</option>
+        <!-- Options will be populated dynamically -->
+    </select>
     <div id="consensusResults"></div>
-    <div id="leaderboard"></div>
 
     <script>
-        // Replace '1' with the current week number as needed
-        const weekNumber = 1; 
+        const apiUrl = 'https://soft-lab-bfdb.jay-finnigan.workers.dev';
+        const players = ['Dan', 'Tim', 'Patrick', 'Jay'];
 
-        // Mapping old player names to the new names
-        const playerNameMap = {
-            'Player1': 'Dan',
-            'Player2': 'Tim',
-            'Player3': 'Patrick',
-            'Player4': 'Jay'
-        };
+        document.addEventListener('DOMContentLoaded', function () {
+            populateWeekSelector();
 
-        async function fetchPicksForWeek(week) {
-            const response = await fetch(`https://solitary-boat-e4cc.jay-finnigan.workers.dev/fetch-picks?week=${week}`);
-            if (!response.ok) {
-                console.error('Failed to fetch picks data:', response.statusText);
-                return [];
+            document.getElementById('weekSelector').addEventListener('change', function() {
+                const selectedWeek = this.value;
+                if (selectedWeek) {
+                    fetchConsensus(selectedWeek);
+                }
+            });
+        });
+
+        function populateWeekSelector() {
+            const weekSelector = document.getElementById('weekSelector');
+            for (let i = 1; i <= 18; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Week ${i}`;
+                weekSelector.appendChild(option);
             }
-            return await response.json();
         }
 
-        function calculateConsensusAndLeaderboard(savedPicks) {
-            const consensus = {};
-            const playerScores = {};
+        async function fetchConsensus(week) {
+            try {
+                const picks = await Promise.all(players.map(player => 
+                    fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`)
+                        .then(response => response.json())
+                        .then(data => ({ player, picks: data }))
+                        .catch(() => ({ player, picks: null })) // Handle missing data
+                ));
 
-            savedPicks.forEach(pick => {
-                pick.games.forEach(game => {
-                    if (!consensus[game.loser]) {
-                        consensus[game.loser] = 0;
-                    }
-                    consensus[game.loser] += parseInt(game.confidence);
+                const consensus = calculateConsensus(picks);
+                displayConsensus(consensus, picks);
+            } catch (error) {
+                console.error('Error fetching consensus data:', error);
+                document.getElementById('consensusResults').innerHTML = 'Error fetching consensus data.';
+            }
+        }
 
-                    const playerName = playerNameMap[pick.player] || pick.player;
-
-                    if (!playerScores[playerName]) {
-                        playerScores[playerName] = 0;
-                    }
-                    playerScores[playerName] += parseInt(game.confidence);
-                });
+        function calculateConsensus(allPicks) {
+            const consensusScores = {};
+            allPicks.forEach(({ player, picks }) => {
+                if (picks) {
+                    picks.split('|').forEach(pick => {
+                        const [, loser, confidence] = pick.split(':');
+                        if (!consensusScores[loser]) {
+                            consensusScores[loser] = { score: 0, pickedBy: [] };
+                        }
+                        consensusScores[loser].score += parseInt(confidence);
+                        consensusScores[loser].pickedBy.push(player);
+                    });
+                }
             });
 
-            // Find consensus losers
-            const consensusEntries = Object.entries(consensus).sort((a, b) => b[1] - a[1]);
-            const consensusResultsDiv = document.getElementById('consensusResults');
-            consensusResultsDiv.innerHTML = `<h2>Consensus Losers</h2><ul>${consensusEntries.map(entry => `<li>${entry[0]}: ${entry[1]}</li>`).join('')}</ul>`;
-
-            // Find top 4 players by score
-            const leaderboardEntries = Object.entries(playerScores).sort((a, b) => b[1] - a[1]);
-            const leaderboardDiv = document.getElementById('leaderboard');
-            leaderboardDiv.innerHTML = `<h2>Top 4 Players</h2><ul>${leaderboardEntries.slice(0, 4).map(entry => `<li>${entry[0]}: ${entry[1]}</li>`).join('')}</ul>`;
+            return Object.entries(consensusScores)
+                .sort((a, b) => b[1].score - a[1].score)
+                .map(([team, data]) => ({ team, ...data }));
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const savedPicks = await fetchPicksForWeek(weekNumber);
-            calculateConsensusAndLeaderboard(savedPicks);
-        });
+        function displayConsensus(consensus, allPicks) {
+            const resultsDiv = document.getElementById('consensusResults');
+            let html = '<table><tr><th>Team</th><th>Consensus Score</th><th>Picked By</th></tr>';
+            consensus.forEach(({ team, score, pickedBy }) => {
+                html += `<tr><td>${team}</td><td>${score}</td><td>${pickedBy.join(', ')}</td></tr>`;
+            });
+            html += '</table>';
+
+            html += '<h2>Individual Picks</h2>';
+            allPicks.forEach(({ player, picks }) => {
+                html += `<h3>${player}</h3>`;
+                if (picks) {
+                    html += '<ul>';
+                    picks.split('|').forEach(pick => {
+                        const [, loser, confidence] = pick.split(':');
+                        html += `<li>${loser} (${confidence})</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p>No picks submitted</p>';
+                }
+            });
+
+            resultsDiv.innerHTML = html;
+        }
     </script>
 </body>
 </html>
