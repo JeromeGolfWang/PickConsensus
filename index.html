@@ -192,7 +192,7 @@ select option:disabled {
 
     <!-- Consensus Scoreboard Section -->
     <div id="scoreboard">
-        <h1>NFL Pick'em Consensus Scoreboard</h1>
+        <h1>Loser Pick Consensus</h1>
         <div id="consensusWeekSelector">
             <!-- Consensus week options will be listed here as hyperlinks -->
         </div>
@@ -391,27 +391,19 @@ select option:disabled {
     
     try {
         const picks = await Promise.all(players.map(player => 
-            fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`)
-                .then(response => {
-                    console.log(`Response for ${player}, Week ${week}:`, response);
-                    return response.text();  // Use text instead of JSON
-                })
-                .then(text => {
-                    console.log(`Raw response for ${player}, Week ${week}:`, text);
-                    return text;  // Directly return the text response
-                })
+            fetch(`${apiUrl}/get-picks?player=${player}&week=${week}&nocache=${new Date().getTime()}`) // Add cache buster
+                .then(response => response.text())
+                .then(text => text)
                 .catch(error => {
                     console.error(error.message);
-                    return null; // Return null if there was an error or no data
+                    return null;
                 })
         ));
         
-        console.log('Picks fetched:', picks); // Check if picks are successfully fetched
-
+        console.log('Picks fetched:', picks);
         const scoreboard = calculateScoreboard(picks);
-        console.log('Scoreboard calculated:', scoreboard); // Check the processed scoreboard data
-
-        displayScoreboard(scoreboard);  // Proceed to display the data
+        console.log('Scoreboard calculated:', scoreboard);
+        displayScoreboard(scoreboard);
     } catch (error) {
         console.error('Error fetching consensus data:', error);
         document.getElementById('scoreboardResults').innerHTML = 'Error fetching consensus data.';
@@ -443,7 +435,7 @@ select option:disabled {
 
             function displayScoreboard(scoreboard) {
                 const resultsDiv = document.getElementById('scoreboardResults');
-                let html = '<table><tr><th>Rank</th><th>Team</th><th>Cumulative Score</th></tr>';
+                let html = '<table><tr><th>Rank</th><th>Team</th><th>Loser Score</th></tr>';
                 scoreboard.forEach(({ team, score }, index) => {
                     html += `<tr><td>${index + 1}</td><td>${team}</td><td>${score}</td></tr>`;
                 });
