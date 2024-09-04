@@ -58,6 +58,23 @@
             color: #999;
             background-color: #f0f0f0;
         }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .button-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .button-container button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -79,8 +96,11 @@
         <!-- Games will be populated here -->
     </form>
 
-    <button id="savePicksButton">Save Picks</button>
-    <button id="consensusButton" style="display:none;">View Week Consensus</button>
+    <div class="button-container">
+        <button id="savePicksButton">Save Picks</button>
+        <button id="consensusButton" onclick="window.location.href='consensus.html'">View Week Consensus</button>
+
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -219,7 +239,6 @@
 
                     if (response.ok) {
                         alert('Your picks have been saved successfully!');
-                        document.getElementById('consensusButton').style.display = 'block';
                     } else {
                         const errorText = await response.text();
                         alert(`Error saving picks: ${errorText}`);
@@ -231,9 +250,6 @@
             }
 
             document.getElementById('savePicksButton').addEventListener('click', savePicks);
-            document.getElementById('consensusButton').addEventListener('click', function() {
-                window.location.href = '/consensus.html';
-            });
 
             fetchSchedule();
         });
