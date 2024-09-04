@@ -86,11 +86,11 @@
             allPicks.forEach(picks => {
                 if (picks) {
                     picks.split('|').forEach(pick => {
-                        const [, loser, confidence] = pick.split(':');
-                        if (!scores[loser]) {
-                            scores[loser] = 0;
+                        const [, team, confidence] = pick.split(':');
+                        if (!scores[team]) {
+                            scores[team] = 0;
                         }
-                        scores[loser] += parseInt(confidence);
+                        scores[team] += parseInt(confidence);
                     });
                 }
             });
