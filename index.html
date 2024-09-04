@@ -327,10 +327,16 @@
             fetch(`${apiUrl}/get-picks?player=${player}&week=${week}`)
                 .then(response => {
                     console.log(`Response for ${player}, Week ${week}:`, response);
-                    if (!response.ok) {
-                        throw new Error(`No data found for ${player} in week ${week}`);
+                    return response.text();  // Use text to log the raw response
+                })
+                .then(text => {
+                    console.log(`Raw response for ${player}, Week ${week}:`, text);  // Log the raw response
+                    try {
+                        return JSON.parse(text);  // Try to parse the JSON manually
+                    } catch (error) {
+                        console.error(`Failed to parse JSON for ${player}, Week ${week}:`, error);
+                        return null;
                     }
-                    return response.json();
                 })
                 .catch(error => {
                     console.error(error.message);
