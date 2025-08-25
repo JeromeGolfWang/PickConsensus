@@ -393,7 +393,8 @@ document.addEventListener('DOMContentLoaded', function () {
     weekSelector.addEventListener('change', async () => {
         currentWeek = parseInt(weekSelector.value);
         if (currentWeek && currentPlayer) {
-            picks = new Array(SCHEDULE[currentWeek].length).fill({loser: null, confidence: null});
+            // FIXED: Create individual objects for each pick instead of shared reference
+            picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
             await loadPicks(currentPlayer, currentWeek);
@@ -403,7 +404,8 @@ document.addEventListener('DOMContentLoaded', function () {
     playerSelector.addEventListener('change', async () => {
         currentPlayer = playerSelector.value;
         if (currentWeek && currentPlayer) {
-            picks = new Array(SCHEDULE[currentWeek].length).fill({loser: null, confidence: null});
+            // FIXED: Create individual objects for each pick instead of shared reference
+            picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
             await loadPicks(currentPlayer, currentWeek);
