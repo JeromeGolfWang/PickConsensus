@@ -414,6 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function loadWeek() {
         gamesContainer.innerHTML = '';
+        const numGames = SCHEDULE[currentWeek].length;
         SCHEDULE[currentWeek].forEach((game, index) => {
             const card = document.createElement('div');
             card.classList.add('game-card');
@@ -432,12 +433,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
                 <div class="confidence-container">
                     Confidence: 
-                    <button class="confidence-btn" onclick="changeConfidence(${index}, -1)">-</button>
-                    <input type="number" class="confidence-input" min="1" max="${SCHEDULE[currentWeek].length}" value="" readonly>
-                    <button class="confidence-btn" onclick="changeConfidence(${index}, 1)">+</button>
+                    <select class="form-select confidence-select" data-index="${index}">
+                        <option value="">-- Select --</option>
+                    </select>
                 </div>
             `;
             gamesContainer.appendChild(card);
+
+            const select = card.querySelector('.confidence-select');
+            for (let i = 1; i <= numGames; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                select.appendChild(option);
+            }
 
             const teams = card.querySelectorAll('.team');
             teams.forEach((t, isAway) => {
@@ -449,6 +458,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         });
+
+        const selects = document.querySelectorAll('.confidence-select');
+        selects.forEach(s => s.addEventListener('change', (e) => {
+            const index = parseInt(s.dataset.index);
+            picks[index].confidence = parseInt(s.value) || null;
+            updateConfidences();
+        }));
     }
 
     function selectLoser(gameIndex, abbrev, isAway) {
@@ -459,12 +475,27 @@ document.addEventListener('DOMContentLoaded', function () {
         picks[gameIndex].loser = abbrev;
     }
 
-    function changeConfidence(index, delta) {
-        const input = gamesContainer.children[index].querySelector('.confidence-input');
-        let value = parseInt(input.value) || 0;
-        value = Math.max(1, Math.min(SCHEDULE[currentWeek].length, value + delta));
-        input.value = value;
-        picks[index].confidence = value;
+    function updateConfidences() {
+        const selects = document.querySelectorAll('.confidence-select');
+        const used = new Set();
+        const numGames = SCHEDULE[currentWeek].length;
+        selects.forEach(s => {
+            const val = parseInt(s.value);
+            if (val) used.add(val);
+        });
+        selects.forEach(s => {
+            const currentVal = parseInt(s.value);
+            s.innerHTML = '<option value="">-- Select --</option>';
+            for (let i = 1; i <= numGames; i++) {
+                if (!used.has(i) || i === currentVal) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = i;
+                    if (i === currentVal) opt.selected = true;
+                    s.appendChild(opt);
+                }
+            }
+        });
     }
 
     async function getUsedTeams(player, week) {
@@ -502,10 +533,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     t.classList.add('selected');
                 }
             });
-            const input = gameCard.querySelector('.confidence-input');
-            input.value = p.confidence;
+            const select = gameCard.querySelector('.confidence-select');
+            select.value = p.confidence;
             picks[p.index] = {loser: p.team, confidence: p.confidence};
         });
+        updateConfidences();
     }
 
     function parsePicksString(str) {
@@ -546,6 +578,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const maxPick = picks.reduce((max, p) => p.confidence > max.confidence ? p : max, picks[0]);
                 usedTeams.add(maxPick.loser);
                 loadWeek(); // Reload to update disabled teams
+                await loadPicks(currentPlayer, currentWeek); // Reload picks to reflect saved state
             } else {
                 alert('Failed to save picks.');
             }
