@@ -393,7 +393,6 @@ document.addEventListener('DOMContentLoaded', function () {
     weekSelector.addEventListener('change', async () => {
         currentWeek = parseInt(weekSelector.value);
         if (currentWeek && currentPlayer) {
-            // FIXED: Create individual objects for each pick instead of shared reference
             picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
@@ -404,7 +403,6 @@ document.addEventListener('DOMContentLoaded', function () {
     playerSelector.addEventListener('change', async () => {
         currentPlayer = playerSelector.value;
         if (currentWeek && currentPlayer) {
-            // FIXED: Create individual objects for each pick instead of shared reference
             picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
@@ -596,7 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const parsed = parsePicksString(str);
             return parsed.reduce((max, cur) => cur.confidence > max.confidence ? cur : max, parsed[0]);
         }).filter(p => p);
-        if (highPicks.length < PLAYERS.length) {
+        if (highPicks.length === 0) {
             display.textContent = `No consensus yet for Week ${week}`;
             return;
         }
