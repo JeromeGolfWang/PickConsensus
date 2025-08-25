@@ -4,41 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFL Losers Pick'em - 2025 Season</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="nfl-confidence.css">
 </head>
-<body class="bg-dark text-light">
-    <header class="bg-secondary text-center py-3">
-        <h1>NFL Losers Pick'em - 2025 Season</h1>
+<body>
+    <header class="p-3 bg-dark text-white">
+        NFL Losers Pick'em - 2025 Season
     </header>
-    <div class="container my-4">
-        <div class="row mb-4">
+    <div class="container mt-3">
+        <div class="row">
             <div class="col-md-6">
-                <label for="weekSelect" class="form-label">Select Week</label>
-                <select id="weekSelect" class="form-select bg-dark text-light border-secondary">
-                    <option value="">-- Select Week --</option>
+                <label>Select Week</label>
+                <select id="weekSelector" class="form-select">
+                    <option>-- Select Week --</option>
                 </select>
             </div>
             <div class="col-md-6">
-                <label for="playerSelect" class="form-label">Select Player</label>
-                <select id="playerSelect" class="form-select bg-dark text-light border-secondary">
-                    <option value="">-- Select Player --</option>
-                    <option value="Dan">Dan</option>
-                    <option value="Tim">Tim</option>
-                    <option value="Patrick">Patrick</option>
-                    <option value="Jay">Jay</option>
+                <label>Select Player</label>
+                <select id="playerSelector" class="form-select">
+                    <option>-- Select Player --</option>
+                    <option>Dan</option>
+                    <option>Tim</option>
+                    <option>Patrick</option>
+                    <option>Jay</option>
                 </select>
             </div>
         </div>
-        <div id="gamesContainer" class="row"></div>
-        <button id="saveButton" class="btn btn-primary mt-4 d-none">Save Picks</button>
+        <div id="gamesContainer" class="mt-3"></div>
+        <button id="saveButton" class="btn btn-primary mt-3">Save Picks</button>
     </div>
-    <div class="container my-4">
+    <div class="container mt-5">
         <h2>Consensus Scoreboard</h2>
-        <div id="consensusButtons" class="d-flex flex-wrap"></div>
-        <div id="consensusDisplay" class="mt-3"></div>
+        <div id="consensusButtons"></div>
+        <div id="consensusDisplay"></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="nfl-confidence-picks.js"></script>
 </body>
 </html>
