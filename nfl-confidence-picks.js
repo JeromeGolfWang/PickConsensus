@@ -549,8 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const losers = picks.map(p => p.loser);
         const confs = picks.map(p => p.confidence);
         if (losers.some(l => !l)) return 'Select a loser for every game.';
-        const definedLosers = losers.filter(l => l !== null);
-        if (new Set(definedLosers).size !== definedLosers.length) return 'Cannot select the same team multiple times.';
+        if (new Set(losers).size !== losers.length) return 'Cannot select the same team multiple times.';
         if (confs.some(c => !c || c < 1 || c > picks.length)) return 'Invalid confidence values.';
         const uniqueConfs = new Set(confs);
         if (uniqueConfs.size !== picks.length) return 'Confidences must be unique from 1 to ' + picks.length + '.';
