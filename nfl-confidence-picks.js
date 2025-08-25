@@ -361,174 +361,150 @@ const SCHEDULE = [
     ],
 ];
 
-document.addEventListener('DOMContentLoaded', () => {
-    const weekSelect = document.getElementById('weekSelect');
+document.addEventListener('DOMContentLoaded', function () {
+    const weekSelector = document.getElementById('weekSelector');
+    const playerSelector = document.getElementById('playerSelector');
+    const saveButton = document.getElementById('saveButton');
+    const gamesContainer = document.getElementById('gamesContainer');
+    const consensusButtons = document.getElementById('consensusButtons');
+    const consensusDisplay = document.getElementById('consensusDisplay');
+    let currentWeek = null;
+    let currentPlayer = null;
+    let picks = [];
+    let usedTeams = new Set();
+
+    // Populate weeks
     for (let i = 1; i <= 18; i++) {
         const option = document.createElement('option');
         option.value = i;
         option.textContent = `Week ${i}`;
-        weekSelect.appendChild(option);
+        weekSelector.appendChild(option);
     }
 
-    const consensusButtons = document.getElementById('consensusButtons');
+    // Populate consensus buttons
     for (let i = 1; i <= 18; i++) {
         const btn = document.createElement('button');
         btn.classList.add('btn', 'btn-secondary', 'consensus-btn');
         btn.textContent = `Week ${i}`;
-        btn.addEventListener('click', () => computeConsensus(i));
+        btn.onclick = () => computeConsensus(i);
         consensusButtons.appendChild(btn);
     }
 
-    const playerSelect = document.getElementById('playerSelect');
-    const gamesContainer = document.getElementById('gamesContainer');
-    const saveButton = document.getElementById('saveButton');
+    weekSelector.addEventListener('change', async () => {
+        currentWeek = parseInt(weekSelector.value);
+        if (currentWeek && currentPlayer) {
+            picks = new Array(SCHEDULE[currentWeek].length).fill({loser: null, confidence: null});
+            usedTeams = await getUsedTeams(currentPlayer, currentWeek);
+            loadWeek();
+            await loadPicks(currentPlayer, currentWeek);
+        }
+    });
 
-    let currentWeek = null;
-    let currentPlayer = null;
-    let usedTeams = new Set();
-    let picks = [];
+    playerSelector.addEventListener('change', async () => {
+        currentPlayer = playerSelector.value;
+        if (currentWeek && currentPlayer) {
+            picks = new Array(SCHEDULE[currentWeek].length).fill({loser: null, confidence: null});
+            usedTeams = await getUsedTeams(currentPlayer, currentWeek);
+            loadWeek();
+            await loadPicks(currentPlayer, currentWeek);
+        }
+    });
 
-    weekSelect.addEventListener('change', loadWeek);
-    playerSelect.addEventListener('change', loadWeek);
     saveButton.addEventListener('click', savePicks);
 
-    async function loadWeek() {
-        const week = parseInt(weekSelect.value);
-        const player = playerSelect.value;
-        if (!week || !player) return;
-
-        currentWeek = week;
-        currentPlayer = player;
+    function loadWeek() {
         gamesContainer.innerHTML = '';
-        saveButton.classList.add('d-none');
-        picks = SCHEDULE[week].map(() => ({loser: null, confidence: null}));
-
-        usedTeams = await getUsedTeams(player, week);
-        const games = SCHEDULE[week];
-        games.forEach((game, index) => {
-            const card = createGameCard(game, index);
+        SCHEDULE[currentWeek].forEach((game, index) => {
+            const card = document.createElement('div');
+            card.classList.add('game-card');
+            card.innerHTML = `
+                <div class="game-info">${game.day} ${game.date} - ${game.time} on ${game.tv}</div>
+                <div class="team-container">
+                    <div class="team" data-team="${game.away.abbrev}">
+                        <img src="https://a.espncdn.com/i/teamlogos/nfl/500/${game.away.abbrev.toLowerCase()}.png" alt="${game.away.name}">
+                        <div>${game.away.name}</div>
+                    </div>
+                    <span class="vs">@</span>
+                    <div class="team" data-team="${game.home.abbrev}">
+                        <img src="https://a.espncdn.com/i/teamlogos/nfl/500/${game.home.abbrev.toLowerCase()}.png" alt="${game.home.name}">
+                        <div>${game.home.name}</div>
+                    </div>
+                </div>
+                <div class="confidence-container">
+                    Confidence: 
+                    <button class="confidence-btn" onclick="changeConfidence(${index}, -1)">-</button>
+                    <input type="number" class="confidence-input" min="1" max="${SCHEDULE[currentWeek].length}" value="" readonly>
+                    <button class="confidence-btn" onclick="changeConfidence(${index}, 1)">+</button>
+                </div>
+            `;
             gamesContainer.appendChild(card);
+
+            const teams = card.querySelectorAll('.team');
+            teams.forEach((t, isAway) => {
+                const abbrev = t.dataset.team;
+                if (usedTeams.has(abbrev)) {
+                    t.classList.add('disabled');
+                } else {
+                    t.addEventListener('click', () => selectLoser(index, abbrev, isAway === 0));
+                }
+            });
         });
+    }
 
-        const savedPicks = await fetchPicks(player, week);
-        if (savedPicks) applySavedPicks(savedPicks);
+    function selectLoser(gameIndex, abbrev, isAway) {
+        const gameCard = gamesContainer.children[gameIndex];
+        const teams = gameCard.querySelectorAll('.team');
+        teams.forEach(t => t.classList.remove('selected'));
+        teams[isAway ? 0 : 1].classList.add('selected');
+        picks[gameIndex].loser = abbrev;
+    }
 
-        saveButton.classList.remove('d-none');
+    function changeConfidence(index, delta) {
+        const input = gamesContainer.children[index].querySelector('.confidence-input');
+        let value = parseInt(input.value) || 0;
+        value = Math.max(1, Math.min(SCHEDULE[currentWeek].length, value + delta));
+        input.value = value;
+        picks[index].confidence = value;
     }
 
     async function getUsedTeams(player, week) {
         const used = new Set();
         for (let w = 1; w < week; w++) {
-            const priorPicks = await fetchPicks(player, w);
-            if (priorPicks) {
-                const parsed = parsePicksString(priorPicks);
-                parsed.forEach(p => used.add(p.team));
+            const str = await fetchPicks(player, w);
+            if (str) {
+                const parsed = parsePicksString(str);
+                const maxPick = parsed.reduce((max, cur) => cur.confidence > max.confidence ? cur : max, parsed[0]);
+                used.add(maxPick.team);
             }
         }
         return used;
     }
 
-    function createGameCard(game, index) {
-        const card = document.createElement('div');
-        card.classList.add('col-md-6', 'game-card');
-
-        const info = document.createElement('div');
-        info.classList.add('game-info');
-        info.textContent = `${game.day} ${game.date} ${game.time} ${game.tv}`;
-        card.appendChild(info);
-
-        const teamContainer = document.createElement('div');
-        teamContainer.classList.add('team-container');
-
-        const away = createTeamElement(game.away, index, 'away');
-        const vs = document.createElement('span');
-        vs.classList.add('vs');
-        vs.textContent = '@';
-        const home = createTeamElement(game.home, index, 'home');
-
-        teamContainer.appendChild(away);
-        teamContainer.appendChild(vs);
-        teamContainer.appendChild(home);
-
-        card.appendChild(teamContainer);
-
-        const confContainer = document.createElement('div');
-        confContainer.classList.add('confidence-container');
-        confContainer.innerHTML = `
-            <label>Confidence:</label>
-            <button class="confidence-btn down">-</button>
-            <input type="number" class="confidence-input" min="1" max="${SCHEDULE[currentWeek].length}" value="" readonly>
-            <button class="confidence-btn up">+</button>
-        `;
-        const input = confContainer.querySelector('input');
-        const downBtn = confContainer.querySelector('.down');
-        const upBtn = confContainer.querySelector('.up');
-
-        downBtn.addEventListener('click', () => adjustConfidence(index, -1, input));
-        upBtn.addEventListener('click', () => adjustConfidence(index, 1, input));
-        input.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            adjustConfidence(index, e.deltaY < 0 ? 1 : -1, input);
-        });
-
-        card.appendChild(confContainer);
-
-        return card;
-    }
-
-    function createTeamElement(team, index, side) {
-        const elem = document.createElement('div');
-        elem.classList.add('team');
-        elem.innerHTML = `
-            <img src="https://a.espncdn.com/i/teamlogos/nfl/500/${team.abbrev.toLowerCase()}.png" alt="${team.name}">
-            <div>${team.name}</div>
-        `;
-        if (usedTeams.has(team.abbrev)) {
-            elem.classList.add('disabled');
-        } else {
-            elem.addEventListener('click', () => selectLoser(index, team.abbrev, elem));
-        }
-        return elem;
-    }
-
-    function selectLoser(index, abbrev, elem) {
-        const gameCard = elem.closest('.game-card');
-        const teams = gameCard.querySelectorAll('.team');
-        teams.forEach(t => t.classList.remove('selected'));
-        elem.classList.add('selected');
-        picks[index].loser = abbrev;
-    }
-
-    function adjustConfidence(index, delta, input) {
-        let val = parseInt(input.value) || 0;
-        val = Math.max(1, Math.min(SCHEDULE[currentWeek].length, val + delta));
-        input.value = val;
-        picks[index].confidence = val;
-    }
-
     async function fetchPicks(player, week) {
         try {
             const response = await fetch(`${API_URL}/get-picks?player=${player}&week=${week}`);
-            if (response.ok) return await response.text();
-        } catch (e) {
-            console.error(e);
-        }
+            if (response.ok) {
+                return await response.text();
+            }
+        } catch (e) {}
         return null;
     }
 
-    function applySavedPicks(picksString) {
-        const parsed = parsePicksString(picksString);
-        parsed.forEach((p, index) => {
-            const gameCard = gamesContainer.children[index];
+    async function loadPicks(player, week) {
+        const str = await fetchPicks(player, week);
+        if (!str) return;
+        const parsed = parsePicksString(str);
+        parsed.forEach(p => {
+            const gameCard = gamesContainer.children[p.index];
             const teams = gameCard.querySelectorAll('.team');
             teams.forEach(t => {
-                if (t.querySelector('img').alt.includes(p.team)) {
+                if (t.dataset.team === p.team) {
                     t.classList.add('selected');
                 }
             });
             const input = gameCard.querySelector('.confidence-input');
             input.value = p.confidence;
-            picks[index] = {loser: p.team, confidence: p.confidence};
+            picks[p.index] = {loser: p.team, confidence: p.confidence};
         });
     }
 
@@ -567,7 +543,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 alert('Picks saved!');
-                usedTeams.add(picks.reduce((max, p) => p.confidence > max.confidence ? p : max, picks[0]).loser);
+                const maxPick = picks.reduce((max, p) => p.confidence > max.confidence ? p : max, picks[0]);
+                usedTeams.add(maxPick.loser);
                 loadWeek(); // Reload to update disabled teams
             } else {
                 alert('Failed to save picks.');
