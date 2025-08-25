@@ -478,23 +478,21 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateConfidences() {
         const selects = document.querySelectorAll('.confidence-select');
         const used = new Set();
-        const numGames = SCHEDULE[currentWeek].length;
         selects.forEach(s => {
             const val = parseInt(s.value);
             if (val) used.add(val);
         });
         selects.forEach(s => {
             const currentVal = parseInt(s.value);
-            s.innerHTML = '<option value="">-- Select --</option>';
-            for (let i = 1; i <= numGames; i++) {
-                if (!used.has(i) || i === currentVal) {
-                    const opt = document.createElement('option');
-                    opt.value = i;
-                    opt.textContent = i;
-                    if (i === currentVal) opt.selected = true;
-                    s.appendChild(opt);
+            Array.from(s.options).forEach(opt => {
+                if (opt.value === '') return;
+                const val = parseInt(opt.value);
+                if (used.has(val) && val !== currentVal) {
+                    opt.disabled = true;
+                } else {
+                    opt.disabled = false;
                 }
-            }
+            });
         });
     }
 
@@ -551,7 +549,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const losers = picks.map(p => p.loser);
         const confs = picks.map(p => p.confidence);
         if (losers.some(l => !l)) return 'Select a loser for every game.';
-        if (new Set(losers).size !== losers.length) return 'Cannot select the same team multiple times.';
+        const definedLosers = losers.filter(l => l !== null);
+        if (new Set(definedLosers).size !== definedLosers.length) return 'Cannot select the same team multiple times.';
         if (confs.some(c => !c || c < 1 || c > picks.length)) return 'Invalid confidence values.';
         const uniqueConfs = new Set(confs);
         if (uniqueConfs.size !== picks.length) return 'Confidences must be unique from 1 to ' + picks.length + '.';
