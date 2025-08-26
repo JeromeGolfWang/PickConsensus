@@ -362,15 +362,13 @@ const SCHEDULE = [
 ];
 
 document.addEventListener('DOMContentLoaded', function () {
-    // ---- EDIT THESE TO MATCH YOUR KV KEYS EXACTLY ----
-    // The 'id' is what is stored in KV (e.g., picks:Dan:1 -> use "Dan")
-    const PLAYERS = [
-        { id: 'Dan',    name: 'Dan' },
-        { id: 'Jay',    name: 'Jay' },
-        { id: 'Tim',    name: 'Tim' },
-        { id: 'Jerome', name: 'Jerome' }, // change if your KV uses a different key
-    ];
-    // ---------------------------------------------------
+    // ---- PLAYERS ARRAY - MATCHES THE GLOBAL PLAYERS ARRAY ----
+    // Using the same player list as defined at the top of the file
+    const PLAYER_CONFIGS = PLAYERS.map(playerName => ({
+        id: playerName,
+        name: playerName
+    }));
+    // -----------------------------------------------------------
 
     // Helper: always return the string key used by KV
     const playerKey = (p) => (typeof p === 'string' ? p : (p?.id || p?.name || ''));
@@ -387,10 +385,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let picks = [];
     let usedTeams = new Set();
 
-    // Populate players dropdown from PLAYERS
+    // Populate players dropdown from PLAYER_CONFIGS
     if (playerSelector) {
         playerSelector.innerHTML = '<option value="">-- Select Player --</option>';
-        for (const p of PLAYERS) {
+        for (const p of PLAYER_CONFIGS) {
             const opt = document.createElement('option');
             opt.value = p.id;   // store the KV key in value
             opt.textContent = p.name;
@@ -611,13 +609,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Fixed: always use the four player IDs when computing consensus
+    // Fixed: use the correct PLAYER_CONFIGS array when computing consensus
     async function computeConsensus(week) {
         const display = document.getElementById('consensusDisplay');
         display.innerHTML = '';
 
+        // Add debugging to see what's happening
+        console.log(`Computing consensus for week ${week}...`);
+        console.log('Checking players:', PLAYER_CONFIGS.map(p => p.id));
+
         const allPicks = await Promise.all(
-            PLAYERS.map(p => fetchPicks(playerKey(p), week))
+            PLAYER_CONFIGS.map(async p => {
+                const picks = await fetchPicks(p.id, week);
+                console.log(`${p.name} (${p.id}) picks:`, picks);
+                return picks;
+            })
         );
 
         const highPicks = allPicks
@@ -627,6 +633,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return parsed.reduce((max, cur) => cur.confidence > max.confidence ? cur : max, parsed[0]);
             })
             .filter(Boolean);
+
+        console.log('High confidence picks found:', highPicks);
 
         if (highPicks.length === 0) {
             display.textContent = `No consensus yet for Week ${week}`;
