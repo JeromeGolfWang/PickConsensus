@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const consensusDisplay = document.getElementById('consensusDisplay');
     let currentWeek = null;
     let currentPlayer = null;
-    let picks = [];
+    let picks = []; // Now array of {index, loser, confidence} for selected games only
     let usedTeams = new Set();
 
     // Populate weeks
@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', function () {
     weekSelector.addEventListener('change', async () => {
         currentWeek = parseInt(weekSelector.value);
         if (currentWeek && currentPlayer) {
-            picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
+            picks = [];
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
             await loadPicks(currentPlayer, currentWeek);
@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
     playerSelector.addEventListener('change', async () => {
         currentPlayer = playerSelector.value;
         if (currentWeek && currentPlayer) {
-            picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
+            picks = [];
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
             await loadPicks(currentPlayer, currentWeek);
@@ -414,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function loadWeek() {
         gamesContainer.innerHTML = '';
-        const numGames = SCHEDULE[currentWeek].length;
         SCHEDULE[currentWeek].forEach((game, index) => {
             const card = document.createElement('div');
             card.classList.add('game-card');
@@ -431,22 +430,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div>${game.home.name}</div>
                     </div>
                 </div>
-                <div class="confidence-container">
+                <div class="confidence-container" style="display: none;" data-index="${index}">
                     Confidence: 
-                    <select class="form-select confidence-select" data-index="${index}">
+                    <select class="form-select confidence-select">
                         <option value="">-- Select --</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
                     </select>
                 </div>
             `;
             gamesContainer.appendChild(card);
-
-            const select = card.querySelector('.confidence-select');
-            for (let i = 1; i <= numGames; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                select.appendChild(option);
-            }
 
             const teams = card.querySelectorAll('.team');
             teams.forEach((t, isAway) => {
@@ -454,44 +450,61 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (usedTeams.has(abbrev)) {
                     t.classList.add('disabled');
                 } else {
-                    t.addEventListener('click', () => selectLoser(index, abbrev, isAway === 0));
+                    t.addEventListener('click', () => toggleSelection(index, abbrev, isAway === 0));
                 }
             });
         });
-
-        const selects = document.querySelectorAll('.confidence-select');
-        selects.forEach(s => s.addEventListener('change', (e) => {
-            const index = parseInt(s.dataset.index);
-            picks[index].confidence = parseInt(s.value) || null;
-            updateConfidences();
-        }));
     }
 
-    function selectLoser(gameIndex, abbrev, isAway) {
+    function toggleSelection(gameIndex, abbrev, isAway) {
         const gameCard = gamesContainer.children[gameIndex];
         const teams = gameCard.querySelectorAll('.team');
+        const confContainer = gameCard.querySelector('.confidence-container');
+        const select = confContainer.querySelector('.confidence-select');
+        const existingPick = picks.find(p => p.index === gameIndex);
+
+        if (existingPick) {
+            // Deselect
+            teams.forEach(t => t.classList.remove('selected'));
+            confContainer.style.display = 'none';
+            picks = picks.filter(p => p.index !== gameIndex);
+            updateConfidences();
+            return;
+        }
+
+        if (picks.length >= 5) {
+            alert('You can only select 5 games.');
+            return;
+        }
+
+        if (usedTeams.has(abbrev)) {
+            alert('Cannot select already used team: ' + abbrev);
+            return;
+        }
+
         teams.forEach(t => t.classList.remove('selected'));
         teams[isAway ? 0 : 1].classList.add('selected');
-        picks[gameIndex].loser = abbrev;
+        confContainer.style.display = 'block';
+        picks.push({index: gameIndex, loser: abbrev, confidence: null});
+        updateConfidences();
+
+        select.addEventListener('change', (e) => {
+            const pick = picks.find(p => p.index === gameIndex);
+            pick.confidence = parseInt(e.target.value) || null;
+            updateConfidences();
+        }, {once: false});
     }
 
     function updateConfidences() {
-        const selects = document.querySelectorAll('.confidence-select');
-        const used = new Set();
-        selects.forEach(s => {
-            const val = parseInt(s.value);
-            if (val) used.add(val);
-        });
-        selects.forEach(s => {
-            const currentVal = parseInt(s.value);
-            Array.from(s.options).forEach(opt => {
+        const usedConfs = new Set(picks.map(p => p.confidence).filter(c => c !== null));
+        picks.forEach(p => {
+            const gameCard = gamesContainer.children[p.index];
+            const select = gameCard.querySelector('.confidence-select');
+            const currentVal = p.confidence;
+            Array.from(select.options).forEach(opt => {
                 if (opt.value === '') return;
                 const val = parseInt(opt.value);
-                if (used.has(val) && val !== currentVal) {
-                    opt.disabled = true;
-                } else {
-                    opt.disabled = false;
-                }
+                opt.disabled = usedConfs.has(val) && val !== currentVal;
             });
         });
     }
@@ -523,6 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const str = await fetchPicks(player, week);
         if (!str) return;
         const parsed = parsePicksString(str);
+        picks = parsed.map(p => ({index: p.index, loser: p.team, confidence: p.confidence}));
         parsed.forEach(p => {
             const gameCard = gamesContainer.children[p.index];
             const teams = gameCard.querySelectorAll('.team');
@@ -531,9 +545,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     t.classList.add('selected');
                 }
             });
-            const select = gameCard.querySelector('.confidence-select');
+            const confContainer = gameCard.querySelector('.confidence-container');
+            confContainer.style.display = 'block';
+            const select = confContainer.querySelector('.confidence-select');
             select.value = p.confidence;
-            picks[p.index] = {loser: p.team, confidence: p.confidence};
         });
         updateConfidences();
     }
@@ -546,13 +561,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function validatePicks() {
+        if (picks.length !== 5) return 'Select exactly 5 games.';
         const losers = picks.map(p => p.loser);
         const confs = picks.map(p => p.confidence);
-        if (losers.some(l => !l)) return 'Select a loser for every game.';
+        if (losers.some(l => !l)) return 'Select a loser for every selected game.';
         if (new Set(losers).size !== losers.length) return 'Cannot select the same team multiple times.';
-        if (confs.some(c => !c || c < 1 || c > picks.length)) return 'Invalid confidence values.';
+        if (confs.some(c => !c || c < 1 || c > 5)) return 'Invalid confidence values.';
         const uniqueConfs = new Set(confs);
-        if (uniqueConfs.size !== picks.length) return 'Confidences must be unique from 1 to ' + picks.length + '.';
+        if (uniqueConfs.size !== picks.length) return 'Confidences must be unique from 1 to 5.';
         for (const l of losers) {
             if (usedTeams.has(l)) return 'Cannot select already used team: ' + l;
         }
@@ -565,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(error);
             return;
         }
-        const picksString = picks.map((p, i) => `${i}:${p.loser}:${p.confidence}`).join('|');
+        const picksString = picks.map(p => `${p.index}:${p.loser}:${p.confidence}`).join('|');
         try {
             const response = await fetch(`${API_URL}/save-picks?player=${currentPlayer}&week=${currentWeek}`, {
                 method: 'POST',
@@ -588,7 +604,6 @@ document.addEventListener('DOMContentLoaded', function () {
     async function computeConsensus(week) {
         const display = document.getElementById('consensusDisplay');
         display.innerHTML = '';
-
         const allPicks = await Promise.all(PLAYERS.map(p => fetchPicks(p, week)));
         const teams = new Set();
         SCHEDULE[week].forEach(game => {
@@ -611,7 +626,12 @@ document.addEventListener('DOMContentLoaded', function () {
             team,
             totalConf: tally[team].totalConf,
             picks: tally[team].picks
-        })).sort((a, b) => b.totalConf - a.totalConf);
+        })).filter(t => t.picks > 0).sort((a, b) => b.totalConf - a.totalConf || b.picks - a.picks);
+
+        if (teamList.length === 0) {
+            display.textContent = `No picks yet for Week ${week}`;
+            return;
+        }
 
         const table = document.createElement('table');
         table.classList.add('table', 'table-dark');
