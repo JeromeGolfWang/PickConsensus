@@ -362,39 +362,16 @@ const SCHEDULE = [
 ];
 
 document.addEventListener('DOMContentLoaded', function () {
-    // ---- PLAYERS ARRAY - MATCHES THE GLOBAL PLAYERS ARRAY ----
-    // Using the same player list as defined at the top of the file
-    const PLAYER_CONFIGS = PLAYERS.map(playerName => ({
-        id: playerName,
-        name: playerName
-    }));
-    // -----------------------------------------------------------
-
-    // Helper: always return the string key used by KV
-    const playerKey = (p) => (typeof p === 'string' ? p : (p?.id || p?.name || ''));
-
-    const weekSelector      = document.getElementById('weekSelector');
-    const playerSelector    = document.getElementById('playerSelector');
-    const saveButton        = document.getElementById('saveButton');
-    const gamesContainer    = document.getElementById('gamesContainer');
-    const consensusButtons  = document.getElementById('consensusButtons');
-    const consensusDisplay  = document.getElementById('consensusDisplay');
-
-    let currentWeek  = null;
-    let currentPlayer = null; // will hold the player **id** (string)
+    const weekSelector = document.getElementById('weekSelector');
+    const playerSelector = document.getElementById('playerSelector');
+    const saveButton = document.getElementById('saveButton');
+    const gamesContainer = document.getElementById('gamesContainer');
+    const consensusButtons = document.getElementById('consensusButtons');
+    const consensusDisplay = document.getElementById('consensusDisplay');
+    let currentWeek = null;
+    let currentPlayer = null;
     let picks = [];
     let usedTeams = new Set();
-
-    // Populate players dropdown from PLAYER_CONFIGS
-    if (playerSelector) {
-        playerSelector.innerHTML = '<option value="">-- Select Player --</option>';
-        for (const p of PLAYER_CONFIGS) {
-            const opt = document.createElement('option');
-            opt.value = p.id;   // store the KV key in value
-            opt.textContent = p.name;
-            playerSelector.appendChild(opt);
-        }
-    }
 
     // Populate weeks
     for (let i = 1; i <= 18; i++) {
@@ -414,9 +391,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     weekSelector.addEventListener('change', async () => {
-        currentWeek = parseInt(weekSelector.value, 10);
+        currentWeek = parseInt(weekSelector.value);
         if (currentWeek && currentPlayer) {
-            picks = Array.from({ length: SCHEDULE[currentWeek].length }, () => ({ loser: null, confidence: null }));
+            picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
             await loadPicks(currentPlayer, currentWeek);
@@ -424,10 +401,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     playerSelector.addEventListener('change', async () => {
-        // value already holds the KV key (id)
-        currentPlayer = playerSelector.value || null;
+        currentPlayer = playerSelector.value;
         if (currentWeek && currentPlayer) {
-            picks = Array.from({ length: SCHEDULE[currentWeek].length }, () => ({ loser: null, confidence: null }));
+            picks = Array.from({length: SCHEDULE[currentWeek].length}, () => ({loser: null, confidence: null}));
             usedTeams = await getUsedTeams(currentPlayer, currentWeek);
             loadWeek();
             await loadPicks(currentPlayer, currentWeek);
@@ -484,9 +460,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const selects = document.querySelectorAll('.confidence-select');
-        selects.forEach(s => s.addEventListener('change', () => {
-            const index = parseInt(s.dataset.index, 10);
-            picks[index].confidence = parseInt(s.value || '0', 10) || null;
+        selects.forEach(s => s.addEventListener('change', (e) => {
+            const index = parseInt(s.dataset.index);
+            picks[index].confidence = parseInt(s.value) || null;
             updateConfidences();
         }));
     }
@@ -503,23 +479,27 @@ document.addEventListener('DOMContentLoaded', function () {
         const selects = document.querySelectorAll('.confidence-select');
         const used = new Set();
         selects.forEach(s => {
-            const val = parseInt(s.value, 10);
+            const val = parseInt(s.value);
             if (val) used.add(val);
         });
         selects.forEach(s => {
-            const currentVal = parseInt(s.value || '0', 10);
+            const currentVal = parseInt(s.value);
             Array.from(s.options).forEach(opt => {
                 if (opt.value === '') return;
-                const val = parseInt(opt.value, 10);
-                opt.disabled = used.has(val) && val !== currentVal;
+                const val = parseInt(opt.value);
+                if (used.has(val) && val !== currentVal) {
+                    opt.disabled = true;
+                } else {
+                    opt.disabled = false;
+                }
             });
         });
     }
 
-    async function getUsedTeams(playerId, week) {
+    async function getUsedTeams(player, week) {
         const used = new Set();
         for (let w = 1; w < week; w++) {
-            const str = await fetchPicks(playerId, w);
+            const str = await fetchPicks(player, w);
             if (str) {
                 const parsed = parsePicksString(str);
                 const maxPick = parsed.reduce((max, cur) => cur.confidence > max.confidence ? cur : max, parsed[0]);
@@ -529,43 +509,39 @@ document.addEventListener('DOMContentLoaded', function () {
         return used;
     }
 
-    async function fetchPicks(playerId, week) {
+    async function fetchPicks(player, week) {
         try {
-            const response = await fetch(`${API_URL}/get-picks?player=${encodeURIComponent(playerId)}&week=${week}`);
+            const response = await fetch(`${API_URL}/get-picks?player=${player}&week=${week}`);
             if (response.ok) {
                 return await response.text();
             }
-        } catch (e) {
-            // swallow network errors; return null like before
-        }
+        } catch (e) {}
         return null;
     }
 
-    async function loadPicks(playerId, week) {
-        const str = await fetchPicks(playerId, week);
+    async function loadPicks(player, week) {
+        const str = await fetchPicks(player, week);
         if (!str) return;
         const parsed = parsePicksString(str);
         parsed.forEach(p => {
             const gameCard = gamesContainer.children[p.index];
-            if (!gameCard) return;
             const teams = gameCard.querySelectorAll('.team');
             teams.forEach(t => {
-                if (t.dataset.team === p.team) t.classList.add('selected');
+                if (t.dataset.team === p.team) {
+                    t.classList.add('selected');
+                }
             });
             const select = gameCard.querySelector('.confidence-select');
-            if (select) {
-                select.value = p.confidence;
-                picks[p.index] = { loser: p.team, confidence: p.confidence };
-            }
+            select.value = p.confidence;
+            picks[p.index] = {loser: p.team, confidence: p.confidence};
         });
         updateConfidences();
     }
 
     function parsePicksString(str) {
-        // format: "0:PHI:8|1:LAC:6|2:ATL:9|..."
         return str.split('|').map(part => {
             const [idx, team, conf] = part.split(':');
-            return { index: parseInt(idx, 10), team, confidence: parseInt(conf, 10) };
+            return {index: parseInt(idx), team, confidence: parseInt(conf)};
         });
     }
 
@@ -591,10 +567,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const picksString = picks.map((p, i) => `${i}:${p.loser}:${p.confidence}`).join('|');
         try {
-            const response = await fetch(
-                `${API_URL}/save-picks?player=${encodeURIComponent(currentPlayer)}&week=${currentWeek}`,
-                { method: 'POST', body: picksString }
-            );
+            const response = await fetch(`${API_URL}/save-picks?player=${currentPlayer}&week=${currentWeek}`, {
+                method: 'POST',
+                body: picksString
+            });
             if (response.ok) {
                 alert('Picks saved!');
                 const maxPick = picks.reduce((max, p) => p.confidence > max.confidence ? p : max, picks[0]);
@@ -609,57 +585,54 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Fixed: use the correct PLAYER_CONFIGS array when computing consensus
     async function computeConsensus(week) {
         const display = document.getElementById('consensusDisplay');
         display.innerHTML = '';
 
-        // Add debugging to see what's happening
-        console.log(`Computing consensus for week ${week}...`);
-        console.log('Checking players:', PLAYER_CONFIGS.map(p => p.id));
-
-        const allPicks = await Promise.all(
-            PLAYER_CONFIGS.map(async p => {
-                const picks = await fetchPicks(p.id, week);
-                console.log(`${p.name} (${p.id}) picks:`, picks);
-                return picks;
-            })
-        );
-
-        const highPicks = allPicks
-            .map(str => {
-                if (!str) return null;
-                const parsed = parsePicksString(str);
-                return parsed.reduce((max, cur) => cur.confidence > max.confidence ? cur : max, parsed[0]);
-            })
-            .filter(Boolean);
-
-        console.log('High confidence picks found:', highPicks);
-
-        if (highPicks.length === 0) {
-            display.textContent = `No consensus yet for Week ${week}`;
-            return;
-        }
-
+        const allPicks = await Promise.all(PLAYERS.map(p => fetchPicks(p, week)));
+        const teams = new Set();
+        SCHEDULE[week].forEach(game => {
+            teams.add(game.away.abbrev);
+            teams.add(game.home.abbrev);
+        });
         const tally = {};
-        highPicks.forEach(p => {
-            if (!tally[p.team]) tally[p.team] = { votes: 0, totalConf: 0 };
-            tally[p.team].votes++;
-            tally[p.team].totalConf += p.confidence;
+        teams.forEach(team => tally[team] = {totalConf: 0, picks: 0});
+
+        allPicks.forEach(str => {
+            if (!str) return;
+            const parsed = parsePicksString(str);
+            parsed.forEach(p => {
+                tally[p.team].totalConf += p.confidence;
+                tally[p.team].picks++;
+            });
         });
 
-        let consensus = Object.keys(tally).reduce((a, b) => {
-            if (tally[a].votes > tally[b].votes) return a;
-            if (tally[b].votes > tally[a].votes) return b;
-            const avgA = tally[a].totalConf / tally[a].votes;
-            const avgB = tally[b].totalConf / tally[b].votes;
-            return avgA > avgB ? a : b;
-        });
+        const teamList = Array.from(teams).map(team => ({
+            team,
+            totalConf: tally[team].totalConf,
+            picks: tally[team].picks
+        })).sort((a, b) => b.totalConf - a.totalConf);
 
-        const { votes, totalConf } = tally[consensus];
-        const avg = (totalConf / votes).toFixed(2);
-        const teamName = Object.keys(TEAM_ABBREV).find(k => TEAM_ABBREV[k] === consensus) || consensus;
-
-        display.textContent = `Consensus for Week ${week}: ${teamName} (${consensus}) - ${votes} votes, avg conf ${avg}`;
+        const table = document.createElement('table');
+        table.classList.add('table', 'table-dark');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    <th>Total Confidence</th>
+                    <th>Number of Picks</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${teamList.map(t => `
+                    <tr>
+                        <td>${Object.keys(TEAM_ABBREV).find(k => TEAM_ABBREV[k] === t.team) || t.team} (${t.team})</td>
+                        <td>${t.totalConf}</td>
+                        <td>${t.picks}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        display.appendChild(table);
     }
 });
